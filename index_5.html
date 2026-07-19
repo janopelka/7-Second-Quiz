@@ -1,0 +1,1923 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0f1024">
+<title>7 Seconds Quiz</title>
+<style>
+/* ==========================================================================
+   PROMĚNNÉ A ZÁKLADNÍ RESET
+   ========================================================================== */
+:root{
+  --bg-1:#0f1024;
+  --bg-2:#1a1b3a;
+  --bg-3:#241a45;
+  --card:#1d1e3f;
+  --card-2:#252749;
+  --accent:#7c5cff;
+  --accent-2:#ff5ca8;
+  --accent-grad:linear-gradient(135deg,#7c5cff 0%,#ff5ca8 100%);
+  --correct:#33d17a;
+  --correct-grad:linear-gradient(135deg,#22c55e,#33d17a);
+  --wrong:#ff4b5c;
+  --wrong-grad:linear-gradient(135deg,#ff4b5c,#ff7a5c);
+  --text:#f4f4fb;
+  --text-dim:#9a9bc4;
+  --radius-lg:28px;
+  --radius-md:18px;
+  --radius-sm:12px;
+  --shadow:0 10px 30px rgba(0,0,0,.45);
+}
+
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent; touch-action:manipulation;}
+html,body{
+  margin:0; padding:0; height:100%; width:100%;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  background:var(--bg-1);
+  color:var(--text);
+  overscroll-behavior:none;
+  -webkit-font-smoothing:antialiased;
+  -webkit-text-size-adjust:100%;
+  text-size-adjust:100%;
+  overflow-x:hidden;
+}
+body{
+  background:
+    radial-gradient(circle at 15% 0%, rgba(124,92,255,.35), transparent 55%),
+    radial-gradient(circle at 85% 100%, rgba(255,92,168,.25), transparent 55%),
+    var(--bg-1);
+  min-height:100vh;
+  min-height:100dvh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+}
+button{font-family:inherit; border:none; background:none; color:inherit; cursor:pointer;}
+h1,h2,h3,p{margin:0;}
+
+/* Rámeček aplikace - na širších obrazovkách vypadá jako telefon */
+#app{
+  position:relative;
+  width:100%;
+  max-width:480px;
+  height:100vh;
+  height:100dvh;
+  overflow:hidden;
+  background:linear-gradient(180deg,var(--bg-2),var(--bg-3));
+  display:flex;
+  flex-direction:column;
+}
+@media (min-width:600px){
+  #app{
+    height:min(880px,96vh);
+    margin:2vh 0;
+    border-radius:40px;
+    box-shadow:var(--shadow), 0 0 0 8px #05050f;
+  }
+}
+
+/* ==========================================================================
+   OBRAZOVKY (screens) - jednoduchý fade/slide přepínač
+   ========================================================================== */
+.screen{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  padding:calc(28px + env(safe-area-inset-top, 0px)) calc(24px + env(safe-area-inset-right, 0px)) calc(24px + env(safe-area-inset-bottom, 0px)) calc(24px + env(safe-area-inset-left, 0px));
+  opacity:0;
+  transform:translateY(16px);
+  pointer-events:none;
+  transition:opacity .35s ease, transform .35s ease;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.screen.active{
+  opacity:1;
+  transform:translateY(0);
+  pointer-events:auto;
+}
+
+/* ---- Úvodní obrazovka ---- */
+/* .start-content se vertikálně centruje pomocí "margin:auto 0" — na rozdíl od
+   justify-content:center se tahle technika na malých obrazovkách nezacyklí do
+   překryvu: prostor prostě zkolabuje na 0 a obsah se zarovná nahoru, zbytek
+   jde normálně doscrollovat (.screen má overflow-y:auto). Patička je běžný
+   prvek hned za ním, takže se s ničím nikdy nepřekrývá. */
+#screen-start{align-items:center; text-align:center; gap:0;}
+.start-content{
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  margin:auto 0;
+  gap:8px;
+}
+.logo-wrap{
+  display:flex; flex-direction:column; align-items:center; gap:14px; margin-bottom:46px;
+}
+.app-footer{
+  flex-shrink:0;
+  width:100%;
+  text-align:center;
+  font-size:11px;
+  color:var(--text-dim);
+  opacity:.55;
+  padding-top:14px;
+}
+.logo-badge{
+  width:104px; height:104px; border-radius:32px;
+  background:var(--accent-grad);
+  display:flex; align-items:center; justify-content:center;
+  font-size:44px; font-weight:800;
+  box-shadow:0 12px 30px rgba(124,92,255,.45);
+  animation:floaty 4s ease-in-out infinite;
+}
+@keyframes floaty{
+  0%,100%{transform:translateY(0) rotate(0deg);}
+  50%{transform:translateY(-8px) rotate(-3deg);}
+}
+.title{font-size:32px; font-weight:800; letter-spacing:-.5px;}
+.subtitle{color:var(--text-dim); font-size:15px; max-width:280px; line-height:1.5;}
+
+.menu-buttons{display:flex; flex-direction:column; gap:14px; width:100%; max-width:320px;}
+.btn{
+  padding:18px 20px;
+  border-radius:var(--radius-md);
+  font-size:17px;
+  font-weight:700;
+  text-align:center;
+  transition:transform .12s ease, box-shadow .12s ease, filter .12s ease;
+  user-select:none;
+}
+.btn:active{transform:scale(.96);}
+.btn-primary{
+  background:var(--accent-grad);
+  color:#fff;
+  box-shadow:0 10px 24px rgba(124,92,255,.4);
+}
+.btn-secondary{
+  background:var(--card-2);
+  color:var(--text);
+  border:1px solid rgba(255,255,255,.08);
+}
+.btn-secondary:active{background:#2c2e58;}
+.btn-icon{margin-right:8px;}
+
+/* ---- Herní obrazovka ---- */
+#screen-game{padding-top:22px; gap:18px;}
+.game-topbar{
+  display:flex; align-items:center; justify-content:space-between;
+}
+.score-pill{
+  background:var(--card-2);
+  border-radius:999px;
+  padding:10px 18px;
+  font-weight:700;
+  font-size:15px;
+  display:flex; align-items:center; gap:8px;
+  border:1px solid rgba(255,255,255,.06);
+}
+.score-pill .score-value{color:var(--accent);}
+.exit-btn{
+  width:42px; height:42px; border-radius:14px;
+  background:var(--card-2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:18px; color:var(--text-dim);
+  border:1px solid rgba(255,255,255,.06);
+}
+.exit-btn:active{transform:scale(.9);}
+
+/* Kruhový časovač */
+.timer-wrap{
+  align-self:center;
+  position:relative;
+  width:118px; height:118px;
+  margin:4px 0 2px;
+}
+.timer-wrap svg{transform:rotate(-90deg); width:100%; height:100%;}
+.timer-track{fill:none; stroke:rgba(255,255,255,.08); stroke-width:8;}
+.timer-progress{
+  fill:none;
+  stroke:url(#timerGradient);
+  stroke-width:8;
+  stroke-linecap:round;
+  transition:stroke-dashoffset 1s linear;
+}
+.timer-number{
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:38px; font-weight:800;
+}
+.timer-wrap.danger .timer-number{color:var(--wrong); animation:pulse .5s ease infinite;}
+.timer-wrap.danger .timer-progress{stroke:url(#timerGradientDanger);}
+@keyframes pulse{
+  0%,100%{transform:scale(1);}
+  50%{transform:scale(1.14);}
+}
+
+.question-card{
+  background:var(--card);
+  border-radius:var(--radius-lg);
+  padding:26px 22px;
+  min-height:120px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  font-size:20px;
+  font-weight:700;
+  line-height:1.4;
+  border:1px solid rgba(255,255,255,.05);
+  box-shadow:var(--shadow);
+}
+.question-card.enter{animation:questionIn .4s ease;}
+@keyframes questionIn{
+  from{opacity:0; transform:translateX(24px);}
+  to{opacity:1; transform:translateX(0);}
+}
+
+.answers-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  flex:1;
+  align-content:start;
+}
+.answer-btn{
+  background:var(--card-2);
+  border-radius:var(--radius-md);
+  padding:18px 14px;
+  min-height:76px;
+  font-size:15.5px;
+  font-weight:600;
+  display:flex; align-items:center; justify-content:center;
+  text-align:center;
+  border:1px solid rgba(255,255,255,.07);
+  transition:transform .12s ease, background .2s ease, border-color .2s ease;
+}
+.answer-btn:active{transform:scale(.95);}
+.answer-btn.correct{
+  background:var(--correct-grad);
+  border-color:transparent;
+  color:#04220f;
+  animation:pop .35s ease;
+}
+.answer-btn.wrong{
+  background:var(--wrong-grad);
+  border-color:transparent;
+  color:#2b0508;
+  animation:shake .4s ease;
+}
+.answer-btn.dim{opacity:.35;}
+.answer-btn.disabled{pointer-events:none;}
+@keyframes pop{
+  0%{transform:scale(1);}
+  40%{transform:scale(1.08);}
+  100%{transform:scale(1);}
+}
+@keyframes shake{
+  0%,100%{transform:translateX(0);}
+  20%{transform:translateX(-8px);}
+  40%{transform:translateX(8px);}
+  60%{transform:translateX(-6px);}
+  80%{transform:translateX(6px);}
+}
+
+/* ---- Obrazovka konce hry ---- */
+#screen-gameover{justify-content:center; align-items:center; text-align:center; gap:10px;}
+.result-emoji{font-size:56px; margin-bottom:6px;}
+.result-title{font-size:26px; font-weight:800;}
+.result-sub{color:var(--text-dim); font-size:14px; margin-bottom:18px;}
+.score-cards{
+  display:flex; gap:14px; width:100%; max-width:320px; margin-bottom:32px;
+}
+.score-card{
+  flex:1;
+  background:var(--card);
+  border-radius:var(--radius-md);
+  padding:18px 10px;
+  border:1px solid rgba(255,255,255,.06);
+}
+.score-card .label{font-size:12px; color:var(--text-dim); font-weight:600; letter-spacing:.04em; text-transform:uppercase;}
+.score-card .value{font-size:30px; font-weight:800; margin-top:6px;}
+.score-card.highlight{
+  border-color:var(--accent);
+  box-shadow:0 0 0 1px var(--accent), 0 10px 24px rgba(124,92,255,.25);
+}
+.score-card.highlight .value{color:var(--accent);}
+.new-record-badge{
+  display:inline-flex; align-items:center; gap:6px;
+  background:var(--accent-grad);
+  padding:6px 14px; border-radius:999px;
+  font-size:12px; font-weight:800;
+  margin-bottom:14px;
+  animation:pop .5s ease;
+}
+.result-buttons{display:flex; flex-direction:column; gap:12px; width:100%; max-width:320px;}
+
+/* ==========================================================================
+   MODÁLNÍ OKNA (Nastavení / Nejlepší skóre)
+   ========================================================================== */
+.modal-overlay{
+  position:absolute; inset:0;
+  background:rgba(6,6,18,.72);
+  backdrop-filter:blur(4px);
+  display:flex; align-items:flex-end;
+  opacity:0; pointer-events:none;
+  transition:opacity .25s ease;
+  z-index:20;
+}
+.modal-overlay.active{opacity:1; pointer-events:auto;}
+.modal-sheet{
+  width:100%;
+  background:var(--card);
+  border-radius:28px 28px 0 0;
+  padding:22px 22px 30px;
+  transform:translateY(100%);
+  transition:transform .3s cubic-bezier(.2,.9,.3,1.1);
+  border-top:1px solid rgba(255,255,255,.08);
+}
+.modal-overlay.active .modal-sheet{transform:translateY(0);}
+.modal-header{
+  display:flex; align-items:center; justify-content:space-between; margin-bottom:18px;
+}
+.modal-header h2{font-size:19px; font-weight:800;}
+.modal-close{
+  width:34px; height:34px; border-radius:12px;
+  background:var(--card-2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; color:var(--text-dim);
+}
+.setting-row{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 0;
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.setting-row:last-of-type{border-bottom:none;}
+.setting-label{font-size:15px; font-weight:600;}
+.setting-desc{font-size:12px; color:var(--text-dim); margin-top:2px;}
+
+/* Přepínač (toggle switch) */
+.switch{
+  width:50px; height:30px; border-radius:999px;
+  background:#3a3c66;
+  position:relative;
+  transition:background .2s ease;
+  flex-shrink:0;
+}
+.switch.on{background:var(--accent-grad);}
+.switch::after{
+  content:"";
+  position:absolute; top:3px; left:3px;
+  width:24px; height:24px; border-radius:50%;
+  background:#fff;
+  transition:transform .2s ease;
+  box-shadow:0 2px 6px rgba(0,0,0,.3);
+}
+.switch.on::after{transform:translateX(20px);}
+
+.reset-btn{
+  margin-top:16px;
+  width:100%;
+  padding:14px;
+  border-radius:var(--radius-sm);
+  background:rgba(255,75,92,.12);
+  color:var(--wrong);
+  font-weight:700;
+  font-size:14px;
+  border:1px solid rgba(255,75,92,.25);
+}
+.reset-confirm-row{
+  display:flex; gap:10px; margin-top:14px;
+}
+.reset-confirm-row .btn{flex:1; padding:12px; font-size:14px;}
+
+.bestscore-display{
+  text-align:center;
+  padding:20px 0 8px;
+}
+.bestscore-display .value{font-size:56px; font-weight:800; color:var(--accent);}
+.bestscore-display .label{color:var(--text-dim); font-size:13px; margin-top:4px;}
+
+/* ==========================================================================
+   VÍCEHRÁČOVÝ REŽIM (jméno hráčů, předávání telefonu, tabulka výsledků)
+   ========================================================================== */
+
+/* Stavový pásek nad hrou zobrazující, kdo hraje a kolikátá otázka to je */
+.party-status-pill{
+  align-self:center;
+  margin-top:-6px;
+  background:rgba(124,92,255,.14);
+  border:1px solid rgba(124,92,255,.35);
+  color:var(--text);
+  font-size:13px;
+  font-weight:700;
+  padding:8px 16px;
+  border-radius:999px;
+}
+
+/* ---- Obrazovka výběru témat otázek ---- */
+#screen-topics{padding-top:22px;}
+.topics-quick-actions{
+  display:flex; gap:10px; margin:16px 0 14px;
+}
+.topics-quick-btn{flex:1; padding:12px; font-size:13.5px;}
+.topics-list{
+  display:flex; flex-direction:column; gap:10px;
+  overflow-y:auto;
+  flex:1;
+  padding-bottom:6px;
+}
+.topic-row{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  background:var(--card);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:var(--radius-sm);
+  padding:14px 16px;
+}
+.topic-row .topic-label{font-weight:700; font-size:14.5px;}
+.topic-row .topic-count{color:var(--text-dim); font-size:12px; margin-top:2px;}
+
+/* ---- Obrazovka se seznamem hráčů (zadání jmen / úprava pořadí) ---- */
+#screen-players{padding-top:22px;}
+.players-header{
+  display:flex; align-items:center; justify-content:space-between;
+}
+.players-header h2{font-size:18px; font-weight:800;}
+.add-player-row{
+  display:flex; gap:10px; margin:18px 0 16px;
+}
+.player-input{
+  flex:1;
+  background:var(--card-2);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:var(--radius-sm);
+  padding:14px 16px;
+  font-size:16px; /* 16px zabraňuje automatickému přiblížení stránky při focusu na iOS */
+  color:var(--text);
+}
+.player-input::placeholder{color:var(--text-dim);}
+.add-player-btn{
+  width:52px; padding:0; font-size:22px; border-radius:var(--radius-sm);
+  display:flex; align-items:center; justify-content:center;
+}
+.players-list{
+  display:flex; flex-direction:column; gap:10px;
+  overflow-y:auto;
+  flex:1;
+  padding-bottom:6px;
+}
+.player-row{
+  display:flex; align-items:center; gap:8px;
+  background:var(--card);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:var(--radius-sm);
+  padding:12px 14px;
+}
+.player-row .player-order{
+  width:24px; height:24px; border-radius:50%;
+  background:var(--card-2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:12px; font-weight:800; color:var(--text-dim);
+  flex-shrink:0;
+}
+.player-row .player-name{
+  flex:1; font-weight:600; font-size:15px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.player-row .player-actions{display:flex; gap:4px; flex-shrink:0;}
+.player-mini-btn{
+  width:32px; height:32px; border-radius:10px;
+  background:var(--card-2);
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; color:var(--text-dim);
+}
+.player-mini-btn:active{transform:scale(.9);}
+.player-mini-btn.remove{color:var(--wrong);}
+.player-mini-btn:disabled{opacity:.25; pointer-events:none;}
+.players-hint{color:var(--wrong); font-size:13px; text-align:center; margin:8px 0 0;}
+.players-empty{color:var(--text-dim); font-size:14px; text-align:center; padding:20px 0;}
+
+/* ---- Obrazovka "na řadě je..." (předávání telefonu) ---- */
+#screen-turn{justify-content:center; align-items:center; text-align:center; gap:8px;}
+.turn-progress{color:var(--text-dim); font-size:13px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;}
+.turn-avatar{
+  width:96px; height:96px; border-radius:50%;
+  background:var(--accent-grad);
+  display:flex; align-items:center; justify-content:center;
+  font-size:40px;
+  margin:10px 0 4px;
+  animation:floaty 4s ease-in-out infinite;
+}
+.turn-player-name{font-size:28px; font-weight:800;}
+
+/* ---- Tabulka výsledků (leaderboard) ---- */
+#screen-leaderboard{align-items:center; text-align:center;}
+.leaderboard-list{
+  width:100%; max-width:340px;
+  display:flex; flex-direction:column; gap:10px;
+  margin:22px 0 6px;
+  max-height:280px;
+  overflow-y:auto;
+}
+.leaderboard-row{
+  display:flex; align-items:center; gap:12px;
+  background:var(--card);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:var(--radius-sm);
+  padding:14px 16px;
+}
+.leaderboard-row .lb-rank{width:28px; font-size:16px; font-weight:800; flex-shrink:0;}
+.leaderboard-row .lb-name{flex:1; text-align:left; font-weight:700; font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.leaderboard-row .lb-score{font-weight:800; font-size:15px; color:var(--text-dim);}
+.leaderboard-row.winner-row{
+  border-color:var(--accent);
+  box-shadow:0 0 0 1px var(--accent), 0 10px 20px rgba(124,92,255,.2);
+}
+.leaderboard-row.winner-row .lb-score{color:var(--accent);}
+
+/* ==========================================================================
+   KONFETY
+   ========================================================================== */
+#confetti-container{
+  position:absolute; inset:0;
+  pointer-events:none;
+  overflow:hidden;
+  z-index:30;
+}
+.confetti-piece{
+  position:absolute;
+  top:-10px;
+  width:9px; height:14px;
+  opacity:.95;
+  animation-name:confettiFall;
+  animation-timing-function:cubic-bezier(.4,0,.6,1);
+  animation-fill-mode:forwards;
+}
+@keyframes confettiFall{
+  0%{transform:translateY(0) rotate(0deg); opacity:1;}
+  100%{transform:translateY(105vh) rotate(540deg); opacity:0;}
+}
+
+/* Utility */
+.hidden{display:none !important;}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============================ ÚVODNÍ OBRAZOVKA ============================ -->
+  <section id="screen-start" class="screen active">
+    <div class="start-content">
+      <div class="logo-wrap">
+        <div class="logo-badge">7s</div>
+        <h1 class="title">7 Seconds Quiz</h1>
+        <p class="subtitle">Odpověz na otázku dřív, než vyprší čas. Jedna chyba, nebo pomalá reakce, a je konec!</p>
+      </div>
+      <div class="menu-buttons">
+        <button class="btn btn-primary" id="btn-play">▶ Hrát</button>
+        <button class="btn btn-secondary" id="btn-party">👥 Hra pro více hráčů</button>
+        <button class="btn btn-secondary" id="btn-bestscore">🏆 Nejlepší skóre</button>
+        <button class="btn btn-secondary" id="btn-settings">⚙ Nastavení</button>
+      </div>
+    </div>
+    <div class="app-footer">Created by Jan Opelka</div>
+  </section>
+
+  <!-- ============================ VÝBĚR TÉMAT ============================ -->
+  <section id="screen-topics" class="screen">
+    <div class="players-header">
+      <button class="exit-btn" id="btn-topics-back">←</button>
+      <h2>🗂️ Vyber témata</h2>
+      <div style="width:42px;"></div>
+    </div>
+    <p class="subtitle" style="margin:10px 0 0;">Zvol si, na co se tě budeme ptát. Klidně nech zaškrtnuté vše.</p>
+
+    <div class="topics-quick-actions">
+      <button class="btn btn-secondary topics-quick-btn" id="btn-topics-all">Vybrat vše</button>
+      <button class="btn btn-secondary topics-quick-btn" id="btn-topics-none">Zrušit vše</button>
+    </div>
+
+    <div id="topics-list" class="topics-list"></div>
+    <p id="topics-hint" class="players-hint hidden">Vyber aspoň jedno téma.</p>
+
+    <button class="btn btn-primary" id="btn-topics-confirm" style="margin-top:14px;">▶ Hrát</button>
+  </section>
+
+  <!-- ============================ HERNÍ OBRAZOVKA ============================ -->
+  <section id="screen-game" class="screen">
+    <div class="game-topbar">
+      <div class="score-pill">Skóre&nbsp;<span class="score-value" id="game-score">0</span></div>
+      <button class="exit-btn" id="btn-exit-game">✕</button>
+    </div>
+    <div class="party-status-pill hidden" id="game-party-status">🎮 Hráč · Otázka 1/7</div>
+
+    <div class="timer-wrap" id="timer-wrap">
+      <svg viewBox="0 0 120 120">
+        <defs>
+          <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#7c5cff"/>
+            <stop offset="100%" stop-color="#ff5ca8"/>
+          </linearGradient>
+          <linearGradient id="timerGradientDanger" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ff4b5c"/>
+            <stop offset="100%" stop-color="#ff7a5c"/>
+          </linearGradient>
+        </defs>
+        <circle class="timer-track" cx="60" cy="60" r="52"></circle>
+        <circle class="timer-progress" id="timer-progress" cx="60" cy="60" r="52"></circle>
+      </svg>
+      <div class="timer-number" id="timer-number">7</div>
+    </div>
+
+    <div class="question-card" id="question-card">Otázka se načítá…</div>
+
+    <div class="answers-grid" id="answers-grid"></div>
+  </section>
+
+  <!-- ============================ OBRAZOVKA VÝSLEDKU ============================ -->
+  <section id="screen-gameover" class="screen">
+    <div id="record-badge-wrap"></div>
+    <div class="result-emoji" id="result-emoji">😅</div>
+    <h2 class="result-title" id="result-title">Konec hry</h2>
+    <p class="result-sub" id="result-sub">Zkus to znovu a zlepši svůj výsledek.</p>
+
+    <div class="score-cards">
+      <div class="score-card">
+        <div class="label">Skóre</div>
+        <div class="value" id="final-score">0</div>
+      </div>
+      <div class="score-card highlight">
+        <div class="label">Rekord</div>
+        <div class="value" id="final-best">0</div>
+      </div>
+    </div>
+
+    <div class="result-buttons">
+      <button class="btn btn-primary" id="btn-replay">↻ Hrát znovu</button>
+      <button class="btn btn-secondary" id="btn-menu">🏠 Zpět do menu</button>
+    </div>
+  </section>
+
+  <!-- ============================ VÍCEHRÁČOVÝ REŽIM: SEZNAM HRÁČŮ ============================ -->
+  <section id="screen-players" class="screen">
+    <div class="players-header">
+      <button class="exit-btn" id="btn-players-back">←</button>
+      <h2 id="players-screen-title">👥 Noví hráči</h2>
+      <div style="width:42px;"></div>
+    </div>
+    <p class="subtitle" style="margin:10px 0 0;">Přidej jména hráčů. Pořadí kdykoliv změníš šipkami — hodí se, když někdo hru opustí.</p>
+
+    <div class="add-player-row">
+      <input type="text" id="player-name-input" maxlength="18" placeholder="Jméno hráče" class="player-input">
+      <button class="btn btn-primary add-player-btn" id="btn-add-player">＋</button>
+    </div>
+
+    <div id="players-list" class="players-list"></div>
+    <p id="players-hint" class="players-hint hidden">Přidej aspoň 2 hráče, aby šlo hru vyhodnotit.</p>
+
+    <button class="btn btn-primary" id="btn-players-confirm" style="margin-top:14px;">Spustit hru</button>
+  </section>
+
+  <!-- ============================ VÍCEHRÁČOVÝ REŽIM: "NA ŘADĚ JE..." ============================ -->
+  <section id="screen-turn" class="screen">
+    <p class="turn-progress" id="turn-progress">Hráč 1 z 2</p>
+    <div class="turn-avatar">🎮</div>
+    <h2 class="turn-player-name" id="turn-player-name">Hráč</h2>
+    <p class="subtitle">je na řadě! Podej mu telefon.<br>7 otázek, na každou 7 sekund.</p>
+    <div class="menu-buttons" style="margin-top:30px;">
+      <button class="btn btn-primary" id="btn-turn-start">▶ Start</button>
+      <button class="btn btn-secondary" id="btn-turn-reorder">🔀 Upravit hráče</button>
+      <button class="btn btn-secondary" id="btn-turn-quit">🏠 Ukončit hru</button>
+    </div>
+  </section>
+
+  <!-- ============================ VÍCEHRÁČOVÝ REŽIM: VÝSLEDKY ============================ -->
+  <section id="screen-leaderboard" class="screen">
+    <div class="result-emoji">🏆</div>
+    <h2 class="result-title" id="leaderboard-title">Výsledky</h2>
+    <p class="result-sub">Všichni hráli stejné otázky.</p>
+    <div id="leaderboard-list" class="leaderboard-list"></div>
+    <div class="result-buttons" style="margin-top:10px;">
+      <button class="btn btn-primary" id="btn-party-replay">↻ Hrát znovu (stejní hráči)</button>
+      <button class="btn btn-secondary" id="btn-party-newroster">👥 Nová sestava hráčů</button>
+      <button class="btn btn-secondary" id="btn-party-menu">🏠 Zpět do menu</button>
+    </div>
+  </section>
+
+  <!-- ============================ MODAL: NASTAVENÍ ============================ -->
+  <div class="modal-overlay" id="modal-settings">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h2>⚙ Nastavení</h2>
+        <button class="modal-close" id="close-settings">✕</button>
+      </div>
+
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Zvuky</div>
+          <div class="setting-desc">Zvukové efekty během hry</div>
+        </div>
+        <button class="switch" id="switch-sound"></button>
+      </div>
+
+      <div class="setting-row">
+        <div>
+          <div class="setting-label">Vibrace</div>
+          <div class="setting-desc">Vibrace při odpovědi (pokud podporováno)</div>
+        </div>
+        <button class="switch" id="switch-vibration"></button>
+      </div>
+
+      <button class="reset-btn" id="btn-reset-score">Vynulovat nejlepší skóre</button>
+      <div class="reset-confirm-row hidden" id="reset-confirm-row">
+        <button class="btn btn-secondary" id="btn-reset-cancel">Zrušit</button>
+        <button class="btn" style="background:var(--wrong-grad); color:#2b0508;" id="btn-reset-confirm">Ano, vynulovat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================ MODAL: NEJLEPŠÍ SKÓRE ============================ -->
+  <div class="modal-overlay" id="modal-bestscore">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h2>🏆 Nejlepší skóre</h2>
+        <button class="modal-close" id="close-bestscore">✕</button>
+      </div>
+      <div class="bestscore-display">
+        <div class="value" id="bestscore-value">0</div>
+        <div class="label">bodů v jedné hře</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="confetti-container"></div>
+</div>
+
+<script>
+/* ============================================================================
+   7 SECONDS QUIZ — herní logika
+   Vše běží čistě na klientovi, žádný server ani databáze.
+   Data (nastavení, nejlepší skóre) se ukládají do Local Storage.
+   ============================================================================ */
+
+/* ---------------------------------------------------------------------------
+   1) BANKA OTÁZEK
+   Každá otázka: text, čtyři možnosti (options) a index správné odpovědi.
+   --------------------------------------------------------------------------- */
+const QUESTIONS = [
+  {q:"Jaké je hlavní město Francie?", options:["Paříž","Londýn","Berlín","Řím"], correct:0, category:"geografie"},
+  {q:"Kolik nohou má pavouk?", options:["6","8","10","4"], correct:1, category:"zvirata"},
+  {q:"Která planeta je nejblíže Slunci?", options:["Venuše","Merkur","Mars","Země"], correct:1, category:"veda"},
+  {q:"Kolik je 7 × 8?", options:["54","56","58","64"], correct:1, category:"matematika"},
+  {q:"Jaká je chemická značka vody?", options:["O2","H2O","CO2","NaCl"], correct:1, category:"veda"},
+  {q:"Kdo namaloval Monu Lisu?", options:["Picasso","Van Gogh","Leonardo da Vinci","Rembrandt"], correct:2, category:"umeni"},
+  {q:"Kolik kontinentů má Země?", options:["5","6","7","8"], correct:2, category:"geografie"},
+  {q:"Jaké je hlavní město České republiky?", options:["Brno","Praha","Ostrava","Plzeň"], correct:1, category:"geografie"},
+  {q:"Která řeka je tradičně považována za nejdelší na světě?", options:["Amazonka","Nil","Yangtze","Mississippi"], correct:1, category:"geografie"},
+  {q:"Kolik hráčů má fotbalový tým na hřišti?", options:["10","11","9","12"], correct:1, category:"sport"},
+  {q:"Jaký je chemický symbol zlata?", options:["Ag","Au","Fe","Pb"], correct:1, category:"veda"},
+  {q:"Kolik stran má šestiúhelník?", options:["5","6","7","8"], correct:1, category:"matematika"},
+  {q:"Který oceán je největší?", options:["Atlantský","Indický","Tichý","Severní ledový"], correct:2, category:"geografie"},
+  {q:"V jakém roce skončila druhá světová válka?", options:["1943","1945","1947","1950"], correct:1, category:"historie"},
+  {q:"Které zvíře je považováno za krále zvířat?", options:["Tygr","Slon","Lev","Medvěd"], correct:2, category:"zvirata"},
+  {q:"Kolik minut má jedna hodina?", options:["50","60","100","120"], correct:1, category:"obecne"},
+  {q:"Která země je největší na světě rozlohou?", options:["Kanada","Čína","USA","Rusko"], correct:3, category:"geografie"},
+  {q:"Jak se jmenuje nejvyšší hora světa?", options:["K2","Mont Blanc","Everest","Kilimandžáro"], correct:2, category:"geografie"},
+  {q:"Kolik barev má duha?", options:["5","6","7","8"], correct:2, category:"veda"},
+  {q:"Jaký plyn tvoří většinu zemské atmosféry?", options:["Kyslík","Dusík","CO2","Vodík"], correct:1, category:"veda"},
+  {q:"Kdo napsal Romea a Julii?", options:["Shakespeare","Molière","Goethe","Dante"], correct:0, category:"umeni"},
+  {q:"Kolik měsíců má rok?", options:["10","11","12","13"], correct:2, category:"obecne"},
+  {q:"Jaké je hlavní město Japonska?", options:["Osaka","Kjóto","Tokio","Jokohama"], correct:2, category:"geografie"},
+  {q:"Kolik kostí má přibližně dospělý člověk?", options:["106","156","206","256"], correct:2, category:"veda"},
+  {q:"Který suchozemský živočich je nejrychlejší?", options:["Lev","Gepard","Kůň","Antilopa"], correct:1, category:"zvirata"},
+  {q:"Která firma vyrobila první iPhone?", options:["Samsung","Nokia","Apple","Google"], correct:2, category:"technologie"},
+  {q:"Kolik je 12 × 12?", options:["124","134","144","154"], correct:2, category:"matematika"},
+  {q:"Jaká barva vznikne smícháním modré a žluté?", options:["Fialová","Zelená","Oranžová","Hnědá"], correct:1, category:"obecne"},
+  {q:"Kolik strun má klasická kytara?", options:["4","5","6","7"], correct:2, category:"umeni"},
+  {q:"Jaké je nejmenší prvočíslo?", options:["0","1","2","3"], correct:2, category:"matematika"},
+  {q:"Který savec snáší vejce?", options:["Klokan","Ptakopysk","Delfín","Ježek"], correct:1, category:"zvirata"},
+  {q:"Ve kterém městě stojí Eiffelova věž?", options:["Londýn","Řím","Paříž","Berlín"], correct:2, category:"geografie"},
+  {q:"Kolik kol má standardní osobní auto?", options:["2","3","4","6"], correct:2, category:"obecne"},
+  {q:"Jaká je nejmenší planeta sluneční soustavy?", options:["Mars","Merkur","Venuše","Pluto"], correct:1, category:"veda"},
+  {q:"Kdo je autorem teorie relativity?", options:["Newton","Einstein","Tesla","Bohr"], correct:1, category:"veda"},
+  {q:"Které zvíře je spolu s klokanem symbolem Austrálie?", options:["Koala","Panda","Lama","Tuleň"], correct:0, category:"zvirata"},
+  {q:"Kolik je 100 děleno 4?", options:["20","25","30","4"], correct:1, category:"matematika"},
+  {q:"Jaký je hlavní jazyk v Brazílii?", options:["Španělština","Portugalština","Angličtina","Francouzština"], correct:1, category:"geografie"},
+  {q:"Které pohoří tradičně odděluje Evropu od Asie?", options:["Alpy","Ural","Kavkaz","Karpaty"], correct:1, category:"geografie"},
+  {q:"Kolik nohou má hmyz?", options:["4","6","8","10"], correct:1, category:"zvirata"},
+  {q:"Který jazyk se nejčastěji používá pro skriptování ve webových prohlížečích?", options:["Python","Java","JavaScript","C++"], correct:2, category:"technologie"},
+  {q:"Kolik sekund má jedna minuta?", options:["50","60","70","100"], correct:1, category:"obecne"},
+  {q:"Jaké je hlavní město Itálie?", options:["Milán","Benátky","Řím","Neapol"], correct:2, category:"geografie"},
+  {q:"Který sport se hraje na Wimbledonu?", options:["Golf","Tenis","Kriket","Squash"], correct:1, category:"sport"},
+  {q:"Kolik je polovina ze 50?", options:["20","25","30","15"], correct:1, category:"matematika"},
+  {q:"Které zvíře je nejvyšší na světě?", options:["Slon","Žirafa","Velbloud","Kůň"], correct:1, category:"zvirata"},
+  {q:"Kdo namaloval obraz „Křik“?", options:["Munch","Dalí","Monet","Klimt"], correct:0, category:"umeni"},
+  {q:"Kolik planet je dnes uznáváno ve sluneční soustavě?", options:["7","8","9","10"], correct:1, category:"veda"},
+  {q:"Jaký symbol se používá pro měnu euro?", options:["$","£","€","¥"], correct:2, category:"obecne"},
+  {q:"Kolik je 9 × 9?", options:["72","81","91","99"], correct:1, category:"matematika"},
+  {q:"Jaké je hlavní město Německa?", options:["Mnichov","Berlín","Hamburk","Kolín"], correct:1, category:"geografie"},
+  {q:"Jaké je hlavní město Španělska?", options:["Barcelona","Madrid","Valencie","Sevilla"], correct:1, category:"geografie"},
+  {q:"Jaké je hlavní město Portugalska?", options:["Porto","Lisabon","Faro","Braga"], correct:1, category:"geografie"},
+  {q:"Jaké je hlavní město Rakouska?", options:["Salcburk","Vídeň","Graz","Linec"], correct:1, category:"geografie"},
+  {q:"Jaké je hlavní město Polska?", options:["Krakov","Varšava","Gdaňsk","Vratislav"], correct:1, category:"geografie"},
+  {q:"Jaké je hlavní město Slovenska?", options:["Košice","Bratislava","Žilina","Nitra"], correct:1, category:"geografie"},
+  {q:"Jaké je hlavní město Maďarska?", options:["Debrecín","Budapešť","Szeged","Pécs"], correct:1, category:"geografie"},
+  {q:"Jaké je hlavní město Ruska?", options:["Petrohrad","Moskva","Kazaň","Soči"], correct:1, category:"geografie"},
+  {q:"Jaké je hlavní město Číny?", options:["Šanghaj","Peking","Hongkong","Kanton"], correct:1, category:"geografie"},
+  {q:"Jaké je hlavní město Indie?", options:["Bombaj","Dillí","Kalkata","Bangalúr"], correct:1, category:"geografie"},
+  {q:"Jaké je hlavní město Egypta?", options:["Alexandrie","Káhira","Luxor","Asuán"], correct:1, category:"geografie"},
+  {q:"Jaké je hlavní město Kanady?", options:["Toronto","Ottawa","Vancouver","Montreal"], correct:1, category:"geografie"},
+  {q:"Jaké je hlavní město Austrálie?", options:["Sydney","Canberra","Melbourne","Perth"], correct:1, category:"geografie"},
+  {q:"Jaké je hlavní město Brazílie?", options:["Rio de Janeiro","Brasília","São Paulo","Salvador"], correct:1, category:"geografie"},
+  {q:"Jaké je hlavní město Argentiny?", options:["Buenos Aires","Córdoba","Rosario","Mendoza"], correct:0, category:"geografie"},
+  {q:"Jaké je hlavní město Švédska?", options:["Göteborg","Stockholm","Malmö","Uppsala"], correct:1, category:"geografie"},
+  {q:"Jaké je hlavní město Norska?", options:["Bergen","Oslo","Trondheim","Stavanger"], correct:1, category:"geografie"},
+  {q:"Jaké je hlavní město Řecka?", options:["Soluň","Athény","Patra","Korint"], correct:1, category:"geografie"},
+  {q:"Jaké je hlavní město Turecka?", options:["Istanbul","Ankara","Izmir","Antalya"], correct:1, category:"geografie"},
+  {q:"Který stát Evropské unie má nejvíce obyvatel?", options:["Francie","Itálie","Německo","Polsko"], correct:2, category:"geografie"},
+  {q:"Který kontinent je nejlidnatější?", options:["Afrika","Asie","Evropa","Jižní Amerika"], correct:1, category:"geografie"},
+  {q:"Která je největší horká poušť na světě?", options:["Sahara","Gobi","Kalahari","Arabská poušť"], correct:0, category:"geografie"},
+  {q:"Která řeka protéká Egyptem?", options:["Amazonka","Nil","Volha","Dunaj"], correct:1, category:"geografie"},
+  {q:"Který stát leží na dvou kontinentech, Evropě i Asii?", options:["Turecko","Rakousko","Polsko","Švédsko"], correct:0, category:"geografie"},
+  {q:"Jaké je hlavní město Mexika?", options:["Guadalajara","Mexico City","Cancún","Monterrey"], correct:1, category:"geografie"},
+  {q:"Jak se nazývá největší ostrov světa?", options:["Madagaskar","Grónsko","Borneo","Nová Guinea"], correct:1, category:"geografie"},
+  {q:"Kolik států sousedí s Českou republikou?", options:["2","3","4","5"], correct:2, category:"geografie"},
+  {q:"Které pohoří je nejdelší na světě?", options:["Alpy","Andy","Himaláje","Skalnaté hory"], correct:1, category:"geografie"},
+  {q:"Ve které zemi leží Machu Picchu?", options:["Mexiko","Peru","Chile","Bolívie"], correct:1, category:"geografie"},
+  {q:"Ve které zemi leží Velká čínská zeď?", options:["Japonsko","Čína","Mongolsko","Korea"], correct:1, category:"geografie"},
+  {q:"V jakém roce padla Berlínská zeď?", options:["1987","1989","1991","1993"], correct:1, category:"historie"},
+  {q:"Kdo byl prvním prezidentem USA?", options:["Abraham Lincoln","George Washington","Thomas Jefferson","John Adams"], correct:1, category:"historie"},
+  {q:"V jakém roce začala první světová válka?", options:["1912","1914","1916","1918"], correct:1, category:"historie"},
+  {q:"Kdo byl prvním člověkem na Měsíci?", options:["Buzz Aldrin","Jurij Gagarin","Neil Armstrong","John Glenn"], correct:2, category:"historie"},
+  {q:"V jakém roce vznikla samostatná Československá republika?", options:["1916","1918","1920","1922"], correct:1, category:"historie"},
+  {q:"Kdy se rozdělilo Československo na Českou a Slovenskou republiku?", options:["1991","1992","1993","1994"], correct:2, category:"historie"},
+  {q:"Kdo byl první československý prezident?", options:["Edvard Beneš","Tomáš Garrigue Masaryk","Václav Havel","Antonín Novotný"], correct:1, category:"historie"},
+  {q:"Kdo byl první prezident samostatné České republiky?", options:["Václav Klaus","Václav Havel","Miloš Zeman","Petr Pavel"], correct:1, category:"historie"},
+  {q:"Ve kterém století žil Jan Hus?", options:["12. století","13. století","14.–15. století","16. století"], correct:2, category:"historie"},
+  {q:"Jak se jmenovala zaoceánská loď, která se potopila v roce 1912?", options:["Titanic","Lusitania","Britannic","Olympic"], correct:0, category:"historie"},
+  {q:"V jakém roce se rozpadl Sovětský svaz?", options:["1989","1991","1993","1995"], correct:1, category:"historie"},
+  {q:"Kdo tradičně objevil Ameriku pro Evropany?", options:["Vasco da Gama","Kryštof Kolumbus","Fernando Magalhães","Marco Polo"], correct:1, category:"historie"},
+  {q:"Kdo spolu s Karlem Marxem napsal Komunistický manifest?", options:["Friedrich Engels","Vladimir Lenin","Leon Trockij","Josif Stalin"], correct:0, category:"historie"},
+  {q:"Jak se nazývala spojenecká operace vylodění v Normandii roku 1944?", options:["Overlord","Barbarossa","Torch","Market Garden"], correct:0, category:"historie"},
+  {q:"Kdo je hlavním autorem Deklarace nezávislosti USA?", options:["Benjamin Franklin","Thomas Jefferson","George Washington","John Adams"], correct:1, category:"historie"},
+  {q:"Která starověká civilizace postavila pyramidy v Gíze?", options:["Řecká","Římská","Egyptská","Perská"], correct:2, category:"historie"},
+  {q:"V jakém roce proběhla Sametová revoluce v Československu?", options:["1987","1989","1991","1993"], correct:1, category:"historie"},
+  {q:"Kdo byl vůdcem nacistického Německa za druhé světové války?", options:["Adolf Hitler","Benito Mussolini","Josif Stalin","Winston Churchill"], correct:0, category:"historie"},
+  {q:"Jak se nazývala rivalita USA a SSSR v dobývání vesmíru?", options:["Vesmírný závod","Hvězdné války","Měsíční pakt","Kosmoduel"], correct:0, category:"historie"},
+  {q:"Ve kterém století proběhla Velká francouzská revoluce?", options:["17. století","18. století","19. století","20. století"], correct:1, category:"historie"},
+  {q:"Jaký je chemický symbol kyslíku?", options:["O","Ox","K","Q"], correct:0, category:"veda"},
+  {q:"Jaký je chemický symbol železa?", options:["Ir","Fe","Fr","Fe2"], correct:1, category:"veda"},
+  {q:"Jaká je chemická značka kuchyňské soli?", options:["NaCl","KCl","CaCl2","NaOH"], correct:0, category:"veda"},
+  {q:"Kolik párů chromozomů má člověk?", options:["21","22","23","24"], correct:2, category:"veda"},
+  {q:"Který orgán pumpuje krev v lidském těle?", options:["Plíce","Srdce","Játra","Ledviny"], correct:1, category:"veda"},
+  {q:"Kolik komor má lidské srdce?", options:["2","3","4","5"], correct:2, category:"veda"},
+  {q:"Jaká je přibližně normální tělesná teplota člověka?", options:["35 °C","36,6 °C","38 °C","40 °C"], correct:1, category:"veda"},
+  {q:"Jak se nazývá proces, kterým rostliny vyrábí kyslík ze světla?", options:["Fotosyntéza","Respirace","Fermentace","Oxidace"], correct:0, category:"veda"},
+  {q:"Jaká je přibližná rychlost světla?", options:["300 000 km/s","150 000 km/s","1 000 000 km/s","30 000 km/s"], correct:0, category:"veda"},
+  {q:"Jak se nazývá jednotka pro měření síly?", options:["Newton","Joule","Watt","Pascal"], correct:0, category:"veda"},
+  {q:"Jak se nazývá naše galaxie?", options:["Andromeda","Mléčná dráha","Galaxie Vír","Trojúhelníková galaxie"], correct:1, category:"veda"},
+  {q:"Který plyn rostliny při fotosyntéze pohlcují?", options:["Kyslík","Dusík","Oxid uhličitý","Vodík"], correct:2, category:"veda"},
+  {q:"Jaký je bod varu vody při normálním tlaku?", options:["90 °C","100 °C","110 °C","120 °C"], correct:1, category:"veda"},
+  {q:"Jaký je bod mrazu vody?", options:["-5 °C","0 °C","5 °C","10 °C"], correct:1, category:"veda"},
+  {q:"Kolik základních chutí tradičně rozeznává jazyk?", options:["3","4","5","6"], correct:2, category:"veda"},
+  {q:"Jak se nazývá největší orgán lidského těla?", options:["Srdce","Mozek","Kůže","Játra"], correct:2, category:"veda"},
+  {q:"Který vitamín tělo získává hlavně díky slunečnímu záření?", options:["Vitamín A","Vitamín C","Vitamín D","Vitamín K"], correct:2, category:"veda"},
+  {q:"Jak se nazývá nejmenší stavební jednotka živých organismů?", options:["Molekula","Atom","Buňka","Tkáň"], correct:2, category:"veda"},
+  {q:"Které zvíře má tři srdce?", options:["Chobotnice","Žralok","Slon","Delfín"], correct:0, category:"veda"},
+  {q:"Kdo formuloval zákony gravitace?", options:["Albert Einstein","Isaac Newton","Galileo Galilei","Charles Darwin"], correct:1, category:"veda"},
+  {q:"Kdo formuloval evoluční teorii přirozeného výběru?", options:["Isaac Newton","Charles Darwin","Gregor Mendel","Louis Pasteur"], correct:1, category:"veda"},
+  {q:"Jaký je chemický symbol uhlíku?", options:["C","Cu","Co","Ca"], correct:0, category:"veda"},
+  {q:"Kolik procent lidského těla tvoří přibližně voda?", options:["30 %","50 %","60 %","90 %"], correct:2, category:"veda"},
+  {q:"Jak se nazývá proces přeměny vody na páru?", options:["Kondenzace","Odpařování","Tání","Mrznutí"], correct:1, category:"veda"},
+  {q:"Který plyn je hlavním viníkem skleníkového efektu způsobeného lidmi?", options:["Kyslík","Oxid uhličitý","Dusík","Helium"], correct:1, category:"veda"},
+  {q:"Kolik je 15 + 27?", options:["40","42","43","45"], correct:1, category:"matematika"},
+  {q:"Kolik je 8 × 9?", options:["63","72","81","64"], correct:1, category:"matematika"},
+  {q:"Kolik je 100 − 37?", options:["63","67","73","53"], correct:0, category:"matematika"},
+  {q:"Kolik je 144 : 12?", options:["10","11","12","13"], correct:2, category:"matematika"},
+  {q:"Kolik stran má trojúhelník?", options:["2","3","4","5"], correct:1, category:"matematika"},
+  {q:"Kolik stupňů má pravý úhel?", options:["45°","90°","180°","360°"], correct:1, category:"matematika"},
+  {q:"Kolik stupňů má plný úhel?", options:["180°","270°","360°","90°"], correct:2, category:"matematika"},
+  {q:"Kolik je odmocnina ze 64?", options:["6","7","8","9"], correct:2, category:"matematika"},
+  {q:"Kolik je 6 na druhou (6²)?", options:["12","24","36","48"], correct:2, category:"matematika"},
+  {q:"Kolik je polovina ze 100?", options:["25","50","75","45"], correct:1, category:"matematika"},
+  {q:"Kolik nul má číslo milion?", options:["4","5","6","7"], correct:2, category:"matematika"},
+  {q:"Kolik je 3 × 7?", options:["18","21","24","27"], correct:1, category:"matematika"},
+  {q:"Které z těchto čísel je sudé?", options:["7","9","12","15"], correct:2, category:"matematika"},
+  {q:"Kolik je 5 faktoriál (5!)?", options:["60","100","120","150"], correct:2, category:"matematika"},
+  {q:"Kolik stran (stěn) má krychle?", options:["4","6","8","12"], correct:1, category:"matematika"},
+  {q:"Jak často se koná mistrovství světa ve fotbale?", options:["Každé 2 roky","Každé 3 roky","Každé 4 roky","Každých 5 let"], correct:2, category:"sport"},
+  {q:"Kolik hráčů má na hřišti basketbalový tým?", options:["4","5","6","7"], correct:1, category:"sport"},
+  {q:"Jak dlouhý je přibližně maratonský běh?", options:["21 km","32 km","42 km","50 km"], correct:2, category:"sport"},
+  {q:"Ve kterém sportu se běžně používá výraz „ace“ pro přímý bod ze servisu?", options:["Fotbal","Tenis","Basketbal","Fotbal americký"], correct:1, category:"sport"},
+  {q:"Kolik setů musí muž vyhrát, aby zvítězil v grandslamovém zápase (nejvýše 5 setů)?", options:["2","3","4","5"], correct:1, category:"sport"},
+  {q:"Ve které zemi se konaly první novodobé olympijské hry v roce 1896?", options:["Francie","Řecko","Itálie","Anglie"], correct:1, category:"sport"},
+  {q:"Kolik kruhů je na olympijské vlajce?", options:["4","5","6","7"], correct:1, category:"sport"},
+  {q:"Jak se nazývá nejprestižnější cyklistický závod ve Francii?", options:["Giro d'Italia","Tour de France","Vuelta a España","Paříž–Roubaix"], correct:1, category:"sport"},
+  {q:"Kolik bodů se počítá za trojkový koš v basketbalu?", options:["1","2","3","4"], correct:2, category:"sport"},
+  {q:"Ve kterém sportu se hraje o Stanley Cup?", options:["Basketbal","Lední hokej","Baseball","Americký fotbal"], correct:1, category:"sport"},
+  {q:"Kolik hráčů má hokejový tým na ledě bez brankáře?", options:["4","5","6","7"], correct:1, category:"sport"},
+  {q:"Ve kterém městě se konaly Letní olympijské hry v roce 2012?", options:["Peking","Londýn","Rio de Janeiro","Tokio"], correct:1, category:"sport"},
+  {q:"Kolik kol má maximálně profesionální boxerský zápas?", options:["8","10","12","15"], correct:2, category:"sport"},
+  {q:"Jaký sport hraje tenista Novak Djokovič?", options:["Golf","Tenis","Squash","Badminton"], correct:1, category:"sport"},
+  {q:"Kolik hráčů tvoří volejbalový tým na hřišti?", options:["5","6","7","8"], correct:1, category:"sport"},
+  {q:"Kdo složil operu Kouzelná flétna?", options:["Beethoven","Mozart","Bach","Chopin"], correct:1, category:"umeni"},
+  {q:"Kdo namaloval strop Sixtinské kaple?", options:["Leonardo da Vinci","Michelangelo","Raffael","Donatello"], correct:1, category:"umeni"},
+  {q:"Kdo napsal knižní sérii o Harrym Potterovi?", options:["J. R. R. Tolkien","J. K. Rowling","C. S. Lewis","Suzanne Collins"], correct:1, category:"umeni"},
+  {q:"Kdo namaloval obraz Hvězdná noc?", options:["Pablo Picasso","Vincent van Gogh","Claude Monet","Salvador Dalí"], correct:1, category:"umeni"},
+  {q:"Kdo je autorkou knihy Babička?", options:["Karel Čapek","Božena Němcová","Jan Neruda","Alois Jirásek"], correct:1, category:"umeni"},
+  {q:"Kdo napsal divadelní hru R.U.R. a vymyslel slovo „robot“?", options:["Jaroslav Hašek","Karel Čapek","Franz Kafka","Milan Kundera"], correct:1, category:"umeni"},
+  {q:"Kdo je autorem románu Osudy dobrého vojáka Švejka?", options:["Karel Čapek","Jaroslav Hašek","Bohumil Hrabal","Milan Kundera"], correct:1, category:"umeni"},
+  {q:"Který skladatel zkomponoval Symfonii č. 9 „Novosvětskou“?", options:["Bedřich Smetana","Antonín Dvořák","Leoš Janáček","Gustav Mahler"], correct:1, category:"umeni"},
+  {q:"Kdo zkomponoval cyklus symfonických básní Má vlast?", options:["Antonín Dvořák","Bedřich Smetana","Leoš Janáček","Zdeněk Fibich"], correct:1, category:"umeni"},
+  {q:"Ve kterém filmu zazní věta „May the Force be with you“?", options:["Star Trek","Star Wars","Interstellar","Blade Runner"], correct:1, category:"umeni"},
+  {q:"Kdo režíroval film Titanic z roku 1997?", options:["Steven Spielberg","James Cameron","Christopher Nolan","Peter Jackson"], correct:1, category:"umeni"},
+  {q:"Ve které kapele zpíval Freddie Mercury?", options:["The Rolling Stones","Queen","Led Zeppelin","Pink Floyd"], correct:1, category:"umeni"},
+  {q:"Kdo napsal knihu Malý princ?", options:["Antoine de Saint-Exupéry","Victor Hugo","Jules Verne","Albert Camus"], correct:0, category:"umeni"},
+  {q:"Kdo je autorem obrazu Guernica?", options:["Salvador Dalí","Pablo Picasso","Joan Miró","Diego Rivera"], correct:1, category:"umeni"},
+  {q:"Který hudební nástroj má obvykle 88 kláves?", options:["Varhany","Klavír","Akordeon","Cembalo"], correct:1, category:"umeni"},
+  {q:"Kdo namaloval obraz Poslední večeře Páně?", options:["Michelangelo","Raffael","Leonardo da Vinci","Caravaggio"], correct:2, category:"umeni"},
+  {q:"Ve kterém městě se nachází muzeum Louvre?", options:["Londýn","Paříž","Řím","Madrid"], correct:1, category:"umeni"},
+  {q:"Jak se jmenuje hlavní hrdina knižní i filmové série o čarodějnickém chlapci?", options:["Frodo Pytlík","Harry Potter","Percy Jackson","Artemis Fowl"], correct:1, category:"umeni"},
+  {q:"Který režisér natočil film Jurský park?", options:["George Lucas","Steven Spielberg","James Cameron","Ridley Scott"], correct:1, category:"umeni"},
+  {q:"Kdo je autorem opery Rusalka?", options:["Bedřich Smetana","Antonín Dvořák","Leoš Janáček","Zdeněk Fibich"], correct:1, category:"umeni"},
+  {q:"Co znamená zkratka „WWW“?", options:["World Wide Web","World Wide Wire","Web Wide World","Wide World Web"], correct:0, category:"technologie"},
+  {q:"Kdo založil společnost Microsoft?", options:["Steve Jobs","Bill Gates","Mark Zuckerberg","Elon Musk"], correct:1, category:"technologie"},
+  {q:"Kdo je spoluzakladatelem Apple spolu se Stevem Jobsem?", options:["Bill Gates","Steve Wozniak","Larry Page","Jeff Bezos"], correct:1, category:"technologie"},
+  {q:"Co znamená zkratka „CPU“?", options:["Central Processing Unit","Central Program Unit","Computer Processing Unit","Core Processing Unit"], correct:0, category:"technologie"},
+  {q:"Jak se nazývá běžný formát komprimovaných obrázků s příponou .jpg?", options:["JPEG","PNG","GIF","BMP"], correct:0, category:"technologie"},
+  {q:"Jak se jmenuje sociální síť založená Markem Zuckerbergem?", options:["Twitter","Facebook","Instagram","LinkedIn"], correct:1, category:"technologie"},
+  {q:"Co znamená zkratka „USB“?", options:["Universal Serial Bus","United System Bus","Universal System Board","Unified Serial Board"], correct:0, category:"technologie"},
+  {q:"Kdo je zakladatelem společností Tesla a SpaceX?", options:["Jeff Bezos","Elon Musk","Bill Gates","Larry Page"], correct:1, category:"technologie"},
+  {q:"Jak se nazývá mobilní operační systém vyvíjený společností Google?", options:["iOS","Android","Windows Phone","Symbian"], correct:1, category:"technologie"},
+  {q:"Co znamená zkratka „AI“?", options:["Automatická informace","Umělá inteligence","Aplikační interface","Automatický instalátor"], correct:1, category:"technologie"},
+  {q:"Které zvíře je největší na světě?", options:["Slon africký","Plejtvák obrovský","Žralok velrybí","Žirafa"], correct:1, category:"zvirata"},
+  {q:"Kolik nohou má krab?", options:["6","8","10","12"], correct:2, category:"zvirata"},
+  {q:"Jak se nazývá mládě ovce?", options:["Kůzle","Jehně","Tele","Hříbě"], correct:1, category:"zvirata"},
+  {q:"Jak se nazývá mládě krávy?", options:["Jehně","Sele","Tele","Kůzle"], correct:2, category:"zvirata"},
+  {q:"Který pták neumí létat, ale rychle běhá a žije v Africe?", options:["Tučňák","Pštros","Kiwi","Emu"], correct:1, category:"zvirata"},
+  {q:"Který pták je považován za nejrychlejšího ve střemhlavém letu?", options:["Orel","Sokol stěhovavý","Jestřáb","Krkavec"], correct:1, category:"zvirata"},
+  {q:"Kolik komor má žaludek krávy?", options:["1","2","3","4"], correct:3, category:"zvirata"},
+  {q:"Které zvíře dokáže měnit barvu podle okolí?", options:["Ještěrka","Chameleon","Gekon","Leguán"], correct:1, category:"zvirata"},
+  {q:"Který had je považován za nejdelšího na světě?", options:["Krajta síťovaná","Anakonda velká","Chřestýš","Kobra královská"], correct:0, category:"zvirata"},
+  {q:"Který savec je jediný schopný aktivního letu?", options:["Veverka létavá","Netopýr","Poletucha","Klouzavka"], correct:1, category:"zvirata"},
+  {q:"Kolik let žije v průměru slon africký ve volné přírodě?", options:["20–30 let","40–50 let","60–70 let","90–100 let"], correct:2, category:"zvirata"},
+  {q:"Které zvíře je symbolem Číny a živí se hlavně bambusem?", options:["Tygr","Panda velká","Leopard sněžný","Opice"], correct:1, category:"zvirata"},
+  {q:"Jak se nazývá proměna housenky v motýla?", options:["Mutace","Metamorfóza","Evoluce","Regenerace"], correct:1, category:"zvirata"},
+  {q:"Který jehličnatý strom je v České republice nejrozšířenější?", options:["Borovice","Smrk","Jedle","Modřín"], correct:1, category:"zvirata"},
+  {q:"Která kočkovitá šelma je největší na světě?", options:["Lev","Tygr","Jaguár","Leopard"], correct:1, category:"zvirata"},
+  {q:"Kolik dní má přestupný rok?", options:["364","365","366","367"], correct:2, category:"obecne"},
+  {q:"Kolik týdnů má přibližně rok?", options:["48","50","52","54"], correct:2, category:"obecne"},
+  {q:"Jaká měna se používá v eurozóně?", options:["Dolar","Euro","Libra","Frank"], correct:1, category:"obecne"},
+  {q:"Který jazyk je úředním jazykem Rakouska?", options:["Francouzština","Němčina","Italština","Angličtina"], correct:1, category:"obecne"},
+  {q:"Jaká barva vznikne smícháním červené a bílé?", options:["Fialová","Růžová","Oranžová","Hnědá"], correct:1, category:"obecne"},
+  {q:"Kolik měsíců v roce má 31 dní?", options:["5","6","7","8"], correct:2, category:"obecne"},
+  {q:"Který jazyk má na světě nejvíce rodilých mluvčích?", options:["Angličtina","Mandarínská čínština","Španělština","Hindština"], correct:1, category:"obecne"},
+  {q:"Kolik smyslů má člověk tradičně uváděno?", options:["3","4","5","6"], correct:2, category:"obecne"},
+  {q:"Jaká je hlavní surovina pro výrobu papíru?", options:["Bavlna","Dřevo","Písek","Ropa"], correct:1, category:"obecne"},
+  {q:"Jaký symbol se v matematice používá pro nekonečno?", options:["Θ","∞","Σ","Ω"], correct:1, category:"obecne"},
+  {q:"Z jaké suroviny se vyrábí tradiční italské těstoviny?", options:["Rýže","Pšenice","Kukuřice","Brambory"], correct:1, category:"jidlo"},
+  {q:"Jaké obilí se nejčastěji používá k výrobě sladu na pivo?", options:["Pšenice","Ječmen","Žito","Oves"], correct:1, category:"jidlo"},
+  {q:"Jak se nazývá klasická italská pizza s rajčaty, mozzarellou a bazalkou?", options:["Diavola","Margherita","Capricciosa","Quattro stagioni"], correct:1, category:"jidlo"},
+  {q:"Z jaké země pochází sushi?", options:["Čína","Japonsko","Korea","Thajsko"], correct:1, category:"jidlo"},
+  {q:"Jaká je hlavní ingredience guacamole?", options:["Rajče","Avokádo","Cuketa","Paprika"], correct:1, category:"jidlo"},
+  {q:"Jaké ovoce se používá k výrobě vína?", options:["Jablka","Hrozny","Švestky","Hrušky"], correct:1, category:"jidlo"},
+  {q:"Z jakého druhu těsta se tradičně vyrábí francouzské croissanty?", options:["Chlebové těsto","Listové těsto","Kynuté těsto","Piškotové těsto"], correct:1, category:"jidlo"},
+  {q:"Jaká káva se připravuje s výraznou napěněnou mléčnou pěnou navrchu?", options:["Espresso","Cappuccino","Americano","Ristretto"], correct:1, category:"jidlo"},
+  {q:"Jaké koření dává kari typickou žlutou barvu?", options:["Paprika","Kurkuma","Skořice","Muškátový oříšek"], correct:1, category:"jidlo"},
+  {q:"Který nápoj vzniká kvašením jablečné šťávy?", options:["Cider","Pivo","Rum","Brandy"], correct:0, category:"jidlo"},
+  {q:"Z jaké rostliny se vyrábí čokoláda?", options:["Kakaovník","Kávovník","Vanilovník","Cukrová třtina"], correct:0, category:"jidlo"},
+  {q:"Jaký nápoj je tradičně spojován s anglickým odpolednem?", options:["Káva","Čaj","Limonáda","Horká čokoláda"], correct:1, category:"jidlo"},
+  {q:"Jak se nazývá tenké listové těsto plněné jablky, typické pro rakouskou a českou kuchyni?", options:["Koláč","Buchta","Štrúdl","Vdolek"], correct:2, category:"jidlo"},
+  {q:"Která země je považována za rodiště sýra parmazán?", options:["Francie","Itálie","Švýcarsko","Nizozemsko"], correct:1, category:"jidlo"},
+  {q:"Jaké maso se tradičně používá do klasického hamburgeru?", options:["Kuřecí","Hovězí","Vepřové","Jehněčí"], correct:1, category:"jidlo"},
+  {q:"Jaký nápoj se tradičně vyrábí destilací zkvašené šťávy z cukrové třtiny?", options:["Vodka","Rum","Whisky","Gin"], correct:1, category:"jidlo"},
+  {q:"Které koření se získává ze semínek rostliny vanilovník?", options:["Skořice","Vanilka","Muškát","Hřebíček"], correct:1, category:"jidlo"},
+  {q:"Jaká je hlavní surovina tofu?", options:["Rýže","Sójové boby","Cizrna","Čočka"], correct:1, category:"jidlo"},
+  {q:"Jak se nazývá francouzský sýr s charakteristickou bílou plísní na povrchu?", options:["Gouda","Camembert","Eidam","Čedar"], correct:1, category:"jidlo"},
+  {q:"Jaký alkoholický nápoj patří mezi tradičně nejvíce konzumované v Česku?", options:["Víno","Pivo","Whisky","Rum"], correct:1, category:"jidlo"},
+  {q:"Jak se jmenuje italský instalatér, hlavní hrdina her od Nintenda?", options:["Luigi","Mario","Wario","Yoshi"], correct:1, category:"hry"},
+  {q:"Která společnost vyrábí herní konzoli PlayStation?", options:["Microsoft","Sony","Nintendo","Sega"], correct:1, category:"hry"},
+  {q:"Která společnost vyrábí herní konzoli Xbox?", options:["Sony","Microsoft","Nintendo","Sega"], correct:1, category:"hry"},
+  {q:"Jak se jmenuje modrý ježek, maskot společnosti Sega?", options:["Crash","Sonic","Knuckles","Tails"], correct:1, category:"hry"},
+  {q:"Ve které hře stavíte a těžíte suroviny v kostkovaném světě z bloků?", options:["Fortnite","Minecraft","Roblox","Terraria"], correct:1, category:"hry"},
+  {q:"Jak se nazývá populární battle royale hra od studia Epic Games?", options:["PUBG","Fortnite","Apex Legends","Warzone"], correct:1, category:"hry"},
+  {q:"Která herní série se odehrává ve středověkém Českém království (Kutná Hora, Rattay)?", options:["Mafia","Kingdom Come: Deliverance","Vietcong","Silent Hill"], correct:1, category:"hry"},
+  {q:"Které studio vytvořilo hru Mafia?", options:["Bohemia Interactive","Illusion Softworks / 2K Czech","Warhorse Studios","Amanita Design"], correct:1, category:"hry"},
+  {q:"Jak se jmenuje hlavní hrdina série The Legend of Zelda, kterého ovládá hráč?", options:["Zelda","Link","Ganon","Epona"], correct:1, category:"hry"},
+  {q:"Jaký žánr her je Tetris?", options:["Střílečka","Skládačka (puzzle)","Závodní hra","Plošinovka"], correct:1, category:"hry"},
+  {q:"Jak se jmenuje fiktivní město, kde se odehrává hra Grand Theft Auto V?", options:["Liberty City","Los Santos","Vice City","San Fierro"], correct:1, category:"hry"},
+  {q:"Která postava je hlavní hrdinkou série Tomb Raider?", options:["Lara Croft","Jill Valentine","Aloy","Chun-Li"], correct:0, category:"hry"},
+  {q:"Co sbírá Mario ve svých hrách a získává za to extra životy?", options:["Diamanty","Mince","Hvězdy","Klíče"], correct:1, category:"hry"},
+  {q:"Který herní žánr označuje zkratka „MOBA“?", options:["Multiplayer Online Battle Arena","Massive Offline Battle Arcade","Multi Object Battle Adventure","Mobile Online Board Arena"], correct:0, category:"hry"},
+  {q:"Která hra jako jedna z prvních masově popularizovala žánr „battle royale“?", options:["Fortnite","PUBG","Apex Legends","Overwatch"], correct:1, category:"hry"},
+  {q:"Ve které hře hráč ovládá zaklínače Geralta z Rivie?", options:["Dark Souls","Zaklínač (The Witcher)","Skyrim","Dragon Age"], correct:1, category:"hry"},
+  {q:"Které studio vytvořilo sérii her Zaklínač (The Witcher)?", options:["Warhorse Studios","CD Projekt Red","Bohemia Interactive","Techland"], correct:1, category:"hry"},
+  {q:"Jak se jmenuje herní platforma oblíbená hlavně u dětí, kde si hráči vytvářejí vlastní hry?", options:["Minecraft","Roblox","Fortnite","Among Us"], correct:1, category:"hry"},
+  {q:"Ve které hře hráči hledají „podvodníky“ (impostory) mezi posádkou vesmírné lodi?", options:["Fall Guys","Among Us","Fortnite","Valorant"], correct:1, category:"hry"},
+  {q:"Jak se jmenuje hlavní záporák série Super Mario, který unáší princeznu Peach?", options:["Wario","Bowser","King Boo","Donkey Kong"], correct:1, category:"hry"},
+  {q:"Kdo je zakladatelem společnosti Amazon?", options:["Elon Musk","Jeff Bezos","Bill Gates","Larry Page"], correct:1, category:"technologie"},
+  {q:"Co znamená zkratka „GPS“?", options:["Global Positioning System","General Public System","Global Phone Service","Geo Position Sensor"], correct:0, category:"technologie"},
+  {q:"Jak se jmenuje webový prohlížeč vyvíjený společností Google?", options:["Safari","Firefox","Chrome","Edge"], correct:2, category:"technologie"},
+  {q:"Co znamená zkratka „RAM“ v počítačích?", options:["Random Access Memory","Read Access Memory","Rapid Access Module","Real Application Memory"], correct:0, category:"technologie"},
+  {q:"Která společnost vyvinula operační systém Windows?", options:["Apple","Microsoft","Google","IBM"], correct:1, category:"technologie"},
+  {q:"Co znamená zkratka „PDF“?", options:["Portable Document Format","Personal Data File","Print Document Format","Public Data Format"], correct:0, category:"technologie"},
+  {q:"Jak se nazývá konverzační umělá inteligence od společnosti OpenAI?", options:["Siri","ChatGPT","Alexa","Cortana"], correct:1, category:"technologie"},
+  {q:"Co znamená zkratka „HTML“?", options:["HyperText Markup Language","High Tech Modern Language","Home Tool Markup Language","Hyperlink Text Manual"], correct:0, category:"technologie"},
+  {q:"Který obchod s aplikacemi patří společnosti Apple?", options:["Google Play","App Store","Windows Store","Steam"], correct:1, category:"technologie"},
+  {q:"S čím se běžně spojuje zkratka „Wi-Fi“?", options:["Bezdrátová věrnost (Wireless Fidelity)","Wide Fiber","Wireless File","Wired Field"], correct:0, category:"technologie"},
+  {q:"Kolik hráčů má na hřišti tým v americkém fotbale najednou?", options:["9","10","11","12"], correct:2, category:"sport"},
+  {q:"Ve kterých sportech se používá pojem „grand slam“ pro čtyři nejprestižnější turnaje?", options:["Golf i tenis","Pouze fotbal","Pouze basketbal","Pouze hokej"], correct:0, category:"sport"},
+  {q:"Jak se nazývá nejprestižnější klubová fotbalová soutěž v Evropě?", options:["Evropská liga","Liga mistrů","Konferenční liga","Pohár UEFA"], correct:1, category:"sport"},
+  {q:"Kolik minut trvá standardní fotbalový zápas bez nastavení?", options:["80 minut","90 minut","100 minut","120 minut"], correct:1, category:"sport"},
+  {q:"Jaký sport hrál legendární fotbalista Pelé?", options:["Basketbal","Fotbal","Tenis","Baseball"], correct:1, category:"sport"},
+  {q:"Kolik hráčů má baseballový tým najednou v poli?", options:["7","8","9","10"], correct:2, category:"sport"},
+  {q:"Ve které zemi vznikl sport ragby?", options:["Francie","Anglie","Nový Zéland","Austrálie"], correct:1, category:"sport"},
+  {q:"Kolik hráčů tvoří tým v ragby union na hřišti?", options:["11","13","15","17"], correct:2, category:"sport"},
+  {q:"Ve kterém sportu byl úspěšný český hokejista Jaromír Jágr?", options:["Fotbal","Lední hokej","Tenis","Atletika"], correct:1, category:"sport"},
+  {q:"Kolik hráčů má na hřišti tým v házené?", options:["5","6","7","8"], correct:2, category:"sport"},
+  {q:"V jakém roce byla podepsána Magna Carta v Anglii?", options:["1115","1215","1315","1415"], correct:1, category:"historie"},
+  {q:"Kdo vedl Sovětský svaz během kubánské raketové krize v roce 1962?", options:["Stalin","Chruščov","Brežněv","Gorbačov"], correct:1, category:"historie"},
+  {q:"Ve kterém roce vypukla Velká hospodářská krize (krach na newyorské burze)?", options:["1919","1929","1939","1949"], correct:1, category:"historie"},
+  {q:"Jak se jmenoval egyptský farao, jehož neporušená hrobka byla objevena v roce 1922?", options:["Ramesse II.","Tutanchamon","Achnaton","Cheops"], correct:1, category:"historie"},
+  {q:"Který římský vládce je spojován s výrokem „Přišel jsem, viděl jsem, zvítězil jsem“?", options:["Nero","Julius Caesar","Augustus","Marcus Aurelius"], correct:1, category:"historie"},
+  {q:"V jakém roce skončila válka ve Vietnamu pádem Saigonu?", options:["1965","1970","1975","1980"], correct:2, category:"historie"},
+  {q:"Kdo byl britským premiérem po většinu druhé světové války?", options:["Neville Chamberlain","Winston Churchill","Clement Attlee","Anthony Eden"], correct:1, category:"historie"},
+  {q:"Jak se nazývala zeď, která rozdělovala Berlín na východní a západní část?", options:["Berlínská zeď","Železná opona","Maginotova linie","Hadriánův val"], correct:0, category:"historie"},
+  {q:"Ve kterém roce vstoupilo Česko do Evropské unie?", options:["2000","2002","2004","2006"], correct:2, category:"historie"},
+  {q:"Ve kterém roce vstoupila Česká republika do NATO?", options:["1997","1999","2002","2004"], correct:1, category:"historie"},
+  {q:"Kolik hodin má jeden den?", options:["12","20","24","48"], correct:2, category:"obecne"},
+  {q:"Kolik centimetrů má jeden metr?", options:["10","100","1000","10000"], correct:1, category:"obecne"},
+  {q:"Kolik gramů má jeden kilogram?", options:["10","100","1000","10000"], correct:2, category:"obecne"},
+  {q:"Jaký je oficiální název měny v České republice?", options:["Euro","Koruna česká","Frank","Zlotý"], correct:1, category:"obecne"},
+  {q:"Kolik písmen má anglická abeceda?", options:["24","25","26","27"], correct:2, category:"obecne"},
+  {q:"Jaký je opak slova „horký“?", options:["Teplý","Studený","Vlažný","Suchý"], correct:1, category:"obecne"},
+  {q:"Kolik stran má obvyklá hrací kostka?", options:["4","6","8","10"], correct:1, category:"obecne"},
+  {q:"Které tři základní barvy se v malování používají k namíchání většiny ostatních barev?", options:["Červená, žlutá, modrá","Červená, zelená, modrá","Žlutá, zelená, fialová","Černá, bílá, šedá"], correct:0, category:"obecne"},
+  {q:"Kolik měsíců trvá přibližně jedno roční období?", options:["1","2","3","4"], correct:2, category:"obecne"},
+  {q:"Jaký symbol se používá pro procenta?", options:["&","%","#","@"], correct:1, category:"obecne"},
+];
+
+// Seznam témat (kategorií) otázek nabízených na obrazovce výběru témat.
+const CATEGORIES = [
+  { id: "geografie",   label: "🌍 Geografie" },
+  { id: "historie",    label: "🏛️ Historie" },
+  { id: "veda",        label: "🔬 Věda a příroda" },
+  { id: "matematika",  label: "➗ Matematika" },
+  { id: "sport",       label: "⚽ Sport" },
+  { id: "umeni",       label: "🎨 Umění a kultura" },
+  { id: "technologie", label: "💻 Technologie" },
+  { id: "zvirata",     label: "🐾 Zvířata" },
+  { id: "jidlo",       label: "🍕 Jídlo a pití" },
+  { id: "hry",         label: "🎮 Video hry" },
+  { id: "obecne",      label: "💡 Obecné znalosti" },
+];
+
+/* ---------------------------------------------------------------------------
+   2) KONSTANTY A STAV HRY
+   --------------------------------------------------------------------------- */
+const ROUND_TIME = 7;          // délka kola v sekundách
+const PARTY_ROUND_LEN = 7;     // počet otázek v kole vícehráčového režimu
+const STORAGE_KEYS = {
+  bestScore: "7sq_best_score",
+  settings:  "7sq_settings"
+};
+
+let state = {
+  mode: "solo",        // "solo" | "party" — aktuální herní režim
+  score: 0,
+  pool: [],           // otázky odpovídající aktuálně vybraným tématům (sólo režim)
+  queue: [],          // zamíchaná fronta indexů do state.pool pro aktuální hru (sólo režim)
+  queuePos: 0,
+  timerTimeout: null,  // setTimeout na konec kola (timeout)
+  timerInterval: null, // setInterval na tik po sekundách
+  timeLeft: ROUND_TIME,
+  answered: false,
+  party: null           // { players:[{name,score}], currentIndex, questions, currentQ } — vícehráčový režim
+};
+
+// Seznam hráčů pro vícehráčový režim (jména, pořadí) — udržuje se v paměti po dobu session.
+let partyPlayers = [];
+
+// Vybraná témata otázek — výchozí stav je "vše zaškrtnuto". Volba se pamatuje
+// po dobu session, takže "Hrát znovu" ji nemusí zadávat pořád dokola.
+let selectedCategories = new Set(CATEGORIES.map(c => c.id));
+
+// Do jakého režimu pokračovat po potvrzení obrazovky výběru témat.
+let topicsContext = "solo"; // "solo" | "party"
+
+// Sdílený stav editoru seznamu hráčů — používá se jak pro úvodní zadání jmen,
+// tak pro úpravu pořadí zbývajících hráčů za chodu hry.
+let playerListEditor = {
+  items: [],       // [{id, name}]
+  mode: "setup",   // "setup" (nová hra) | "queue" (úprava zbývajících hráčů za chodu)
+  onConfirm: null  // callback(items) volaný po potvrzení
+};
+
+let settings = loadSettings();
+let audioCtx = null; // AudioContext se vytvoří až po první interakci uživatele
+
+/* ---------------------------------------------------------------------------
+   3) LOCAL STORAGE — pomocné funkce
+   --------------------------------------------------------------------------- */
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEYS.settings);
+    if(raw) return Object.assign({sound:true, vibration:true}, JSON.parse(raw));
+  }catch(e){ /* ignorovat poškozená data */ }
+  return {sound:true, vibration:true};
+}
+function saveSettings(){
+  localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(settings));
+}
+function getBestScore(){
+  return parseInt(localStorage.getItem(STORAGE_KEYS.bestScore) || "0", 10);
+}
+function setBestScore(value){
+  localStorage.setItem(STORAGE_KEYS.bestScore, String(value));
+}
+
+/* ---------------------------------------------------------------------------
+   4) ZVUKY (Web Audio API — generováno v kódu, žádné externí soubory)
+   --------------------------------------------------------------------------- */
+function ensureAudio(){
+  if(!audioCtx){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(AC) audioCtx = new AC();
+  }
+  if(audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+}
+function beep(freq, duration, type, volume){
+  if(!settings.sound || !audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = type || "sine";
+  osc.frequency.value = freq;
+  gain.gain.value = volume != null ? volume : 0.12;
+  osc.connect(gain).connect(audioCtx.destination);
+  const now = audioCtx.currentTime;
+  gain.gain.setValueAtTime(gain.gain.value, now);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+  osc.start(now);
+  osc.stop(now + duration);
+}
+const Sound = {
+  correct: () => { beep(880, .12, "sine", .15); setTimeout(()=>beep(1180,.15,"sine",.13),90); },
+  wrong:   () => { beep(220, .28, "sawtooth", .12); },
+  gameover:() => { beep(300,.18,"triangle",.12); setTimeout(()=>beep(180,.3,"triangle",.12),140); },
+  tick:    () => { beep(660, .09, "square", .07); }
+};
+
+/* ---------------------------------------------------------------------------
+   5) VIBRACE
+   --------------------------------------------------------------------------- */
+function vibrate(pattern){
+  if(settings.vibration && "vibrate" in navigator){
+    try{ navigator.vibrate(pattern); }catch(e){}
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   6) POMOCNÉ FUNKCE
+   --------------------------------------------------------------------------- */
+function shuffle(array){
+  const a = array.slice();
+  for(let i = a.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function $(id){ return document.getElementById(id); }
+
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  $(id).classList.add("active");
+}
+function openModal(id){ $(id).classList.add("active"); }
+function closeModal(id){ $(id).classList.remove("active"); }
+
+/* ---------------------------------------------------------------------------
+   7) HERNÍ LOGIKA
+   --------------------------------------------------------------------------- */
+
+// Vrátí otázky patřící do aktuálně vybraných témat. Pokud by výběr byl
+// (chybou) prázdný, vrátí radši celou banku, aby hra nikdy neuvízla bez otázek.
+function getFilteredQuestions(){
+  const filtered = QUESTIONS.filter(q => selectedCategories.has(q.category));
+  return filtered.length ? filtered : QUESTIONS;
+}
+
+function startGame(){
+  ensureAudio();
+  state.mode = "solo";
+  state.pool = getFilteredQuestions();
+  state.score = 0;
+  state.queue = shuffle(state.pool.map((_, i) => i));
+  state.queuePos = 0;
+  $("game-party-status").classList.add("hidden");
+  updateScoreDisplay();
+  showScreen("screen-game");
+  loadQuestion();
+}
+
+function nextQuestionIndex(){
+  // Pokud jsme prošli celou frontu (hráč je velmi dobrý), znovu zamícháme.
+  if(state.queuePos >= state.queue.length){
+    state.queue = shuffle(state.pool.map((_, i) => i));
+    state.queuePos = 0;
+  }
+  const idx = state.queue[state.queuePos];
+  state.queuePos++;
+  return idx;
+}
+
+function loadQuestion(){
+  const qIndex = nextQuestionIndex();
+  const question = state.pool[qIndex];
+
+  // Zamícháme pořadí odpovědí, ale zapamatujeme si, která je správná.
+  const optionOrder = shuffle(question.options.map((_, i) => i));
+  const options = optionOrder.map(optIdx => ({
+    text: question.options[optIdx],
+    correct: optIdx === question.correct
+  }));
+
+  renderQuestion(question.q, options);
+  startTimer();
+}
+
+// Sdílené vykreslení karty otázky a čtyř tlačítek odpovědí.
+// Používá jak sólo režim (loadQuestion), tak vícehráčový režim (loadPartyQuestion).
+function renderQuestion(text, options){
+  const card = $("question-card");
+  card.textContent = text;
+  card.classList.remove("enter");
+  void card.offsetWidth; // restart animace
+  card.classList.add("enter");
+
+  const grid = $("answers-grid");
+  grid.innerHTML = "";
+  options.forEach(opt => {
+    const btn = document.createElement("button");
+    btn.className = "answer-btn";
+    btn.textContent = opt.text;
+    btn.dataset.correct = opt.correct ? "1" : "0";
+    btn.addEventListener("click", onAnswerClick);
+    grid.appendChild(btn);
+  });
+
+  state.answered = false;
+}
+
+function startTimer(){
+  clearTimer();
+  state.timeLeft = ROUND_TIME;
+
+  const progress = $("timer-progress");
+  const wrap = $("timer-wrap");
+  const circumference = 2 * Math.PI * 52;
+  progress.style.strokeDasharray = circumference;
+  wrap.classList.remove("danger");
+
+  // Nastavíme na plný kruh a v dalším frame spustíme přechod na 0 (vizuální odpočet).
+  progress.style.transition = "none";
+  progress.style.strokeDashoffset = 0;
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      progress.style.transition = `stroke-dashoffset ${ROUND_TIME}s linear`;
+      progress.style.strokeDashoffset = circumference;
+    });
+  });
+
+  $("timer-number").textContent = state.timeLeft;
+
+  state.timerInterval = setInterval(() => {
+    state.timeLeft -= 1;
+    if(state.timeLeft < 0) return;
+    $("timer-number").textContent = state.timeLeft;
+    if(state.timeLeft <= 3 && state.timeLeft > 0){
+      wrap.classList.add("danger");
+      Sound.tick();
+      vibrate(20);
+    }
+  }, 1000);
+
+  state.timerTimeout = setTimeout(() => {
+    handleTimeout();
+  }, ROUND_TIME * 1000);
+}
+
+function clearTimer(){
+  if(state.timerTimeout) clearTimeout(state.timerTimeout);
+  if(state.timerInterval) clearInterval(state.timerInterval);
+  state.timerTimeout = null;
+  state.timerInterval = null;
+}
+
+function freezeTimerVisual(){
+  // Zafixuje aktuální polohu kruhového časovače, aby se po odpovědi nehýbal dál.
+  const progress = $("timer-progress");
+  const computed = getComputedStyle(progress).strokeDashoffset;
+  progress.style.transition = "none";
+  progress.style.strokeDashoffset = computed;
+}
+
+function onAnswerClick(e){
+  if(state.answered) return;
+  state.answered = true;
+  clearTimer();
+  freezeTimerVisual();
+
+  const clicked = e.currentTarget;
+  const isCorrect = clicked.dataset.correct === "1";
+  highlightAnswers(clicked, isCorrect);
+
+  if(state.mode === "party"){
+    if(isCorrect){
+      Sound.correct();
+      vibrate(30);
+      state.party.players[state.party.currentIndex].score++;
+    } else {
+      Sound.wrong();
+      vibrate([40, 60, 40]);
+    }
+    updatePartyTopbar();
+    setTimeout(advancePartyQuestion, 750);
+    return;
+  }
+
+  // ---- sólo režim ----
+  if(isCorrect){
+    Sound.correct();
+    vibrate(30);
+    state.score++;
+    updateScoreDisplay();
+    setTimeout(loadQuestion, 650);
+  } else {
+    Sound.wrong();
+    vibrate([40, 60, 40]);
+    setTimeout(() => endGame("wrong"), 900);
+  }
+}
+
+function handleTimeout(){
+  if(state.answered) return;
+  state.answered = true;
+  clearTimer();
+  highlightAnswers(null, false);
+
+  if(state.mode === "party"){
+    Sound.wrong();
+    vibrate([50, 80, 50]);
+    setTimeout(advancePartyQuestion, 850);
+    return;
+  }
+
+  // ---- sólo režim ----
+  Sound.gameover();
+  vibrate([50, 80, 50]);
+  setTimeout(() => endGame("timeout"), 900);
+}
+
+// Sjednocené obarvení tlačítek po odpovědi (správně/špatně) — sdíleno oběma režimy.
+// clickedBtn může být null, pokud vypršel čas bez odpovědi.
+function highlightAnswers(clickedBtn, isCorrect){
+  const allButtons = document.querySelectorAll(".answer-btn");
+  allButtons.forEach(b => b.classList.add("disabled"));
+
+  if(isCorrect){
+    clickedBtn.classList.add("correct");
+    allButtons.forEach(b => { if(b !== clickedBtn) b.classList.add("dim"); });
+  } else {
+    if(clickedBtn) clickedBtn.classList.add("wrong");
+    allButtons.forEach(b => {
+      if(b.dataset.correct === "1") b.classList.add("correct");
+      else if(b !== clickedBtn) b.classList.add("dim");
+    });
+  }
+}
+
+function updateScoreDisplay(){
+  $("game-score").textContent = state.score;
+}
+
+function endGame(reason){
+  clearTimer();
+  const best = getBestScore();
+  const isNewRecord = state.score > best;
+  if(isNewRecord) setBestScore(state.score);
+  const finalBest = getBestScore();
+
+  $("final-score").textContent = state.score;
+  $("final-best").textContent = finalBest;
+
+  const emoji = $("result-emoji");
+  const title = $("result-title");
+  const sub = $("result-sub");
+  const badgeWrap = $("record-badge-wrap");
+  badgeWrap.innerHTML = "";
+
+  if(isNewRecord && state.score > 0){
+    emoji.textContent = "🎉";
+    title.textContent = "Nový rekord!";
+    sub.textContent = reason === "timeout" ? "Čas vypršel, ale zvládl jsi nový rekord." : "Špatná odpověď, ale zvládl jsi nový rekord.";
+    const badge = document.createElement("div");
+    badge.className = "new-record-badge";
+    badge.textContent = "🏆 NOVÝ REKORD";
+    badgeWrap.appendChild(badge);
+    launchConfetti();
+  } else if(reason === "timeout"){
+    emoji.textContent = "⏱️";
+    title.textContent = "Čas vypršel!";
+    sub.textContent = "Buď příště rychlejší.";
+  } else {
+    emoji.textContent = "😅";
+    title.textContent = "Špatná odpověď";
+    sub.textContent = "Zkus to znovu a zlepši svůj výsledek.";
+  }
+
+  showScreen("screen-gameover");
+}
+
+/* ---------------------------------------------------------------------------
+   8) KONFETY (jednoduchý efekt bez externích knihoven)
+   --------------------------------------------------------------------------- */
+function launchConfetti(){
+  const container = $("confetti-container");
+  const colors = ["#7c5cff", "#ff5ca8", "#33d17a", "#ffd166", "#5cc8ff"];
+  const pieces = 60;
+  for(let i = 0; i < pieces; i++){
+    const piece = document.createElement("div");
+    piece.className = "confetti-piece";
+    piece.style.left = Math.random() * 100 + "%";
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDuration = (2 + Math.random() * 1.5) + "s";
+    piece.style.animationDelay = (Math.random() * 0.4) + "s";
+    piece.style.borderRadius = Math.random() > .5 ? "50%" : "2px";
+    container.appendChild(piece);
+    setTimeout(() => piece.remove(), 4200);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   9) VÍCEHRÁČOVÝ REŽIM ("Hra pro více hráčů")
+   Hráči se v zadaném pořadí střídají na jednom telefonu. Všichni dostanou
+   stejnou pevnou sadu 7 otázek (vybranou jednou na začátku hry), aby šlo
+   jejich výkony spravedlivě porovnat v závěrečné tabulce výsledků.
+   --------------------------------------------------------------------------- */
+
+// Vygeneruje pevnou sadu `count` otázek (z aktuálně vybraných témat) se
+// zamíchaným (ale fixním) pořadím odpovědí — stejná sada se pak znovu použije
+// pro každého hráče v dané hře, aby šlo výsledky spravedlivě porovnat.
+function buildFixedQuestionSet(count){
+  const pool = getFilteredQuestions();
+  const n = Math.min(count, pool.length);
+  const idxs = shuffle(pool.map((_, i) => i)).slice(0, n);
+  return idxs.map(i => {
+    const question = pool[i];
+    const order = shuffle(question.options.map((_, oi) => oi));
+    return {
+      text: question.q,
+      options: order.map(oi => ({
+        text: question.options[oi],
+        correct: oi === question.correct
+      }))
+    };
+  });
+}
+
+// Spustí novou vícehráčovou hru se zadaným seznamem hráčů (partyPlayers).
+function startPartyGame(){
+  state.party = {
+    players: partyPlayers.map(p => ({ name: p.name, score: 0 })),
+    currentIndex: 0,
+    questions: buildFixedQuestionSet(PARTY_ROUND_LEN)
+  };
+  showTurnScreen();
+}
+
+// Zobrazí obrazovku "na řadě je..." pro aktuálního hráče, nebo tabulku
+// výsledků, pokud už všichni hráli.
+function showTurnScreen(){
+  const party = state.party;
+  if(!party || party.currentIndex >= party.players.length){
+    renderLeaderboard();
+    showScreen("screen-leaderboard");
+    return;
+  }
+  const player = party.players[party.currentIndex];
+  $("turn-player-name").textContent = player.name;
+  $("turn-progress").textContent = `Hráč ${party.currentIndex + 1} z ${party.players.length}`;
+  showScreen("screen-turn");
+}
+
+// Aktuální hráč klikl na "Start" — spustí se jeho kolo 7 otázek.
+function beginPlayerRound(){
+  ensureAudio();
+  state.mode = "party";
+  state.party.currentQ = 0;
+  $("game-party-status").classList.remove("hidden");
+  showScreen("screen-game");
+  loadPartyQuestion();
+}
+
+function loadPartyQuestion(){
+  const q = state.party.questions[state.party.currentQ];
+  renderQuestion(q.text, q.options);
+  updatePartyTopbar();
+  startTimer();
+}
+
+function updatePartyTopbar(){
+  const party = state.party;
+  const player = party.players[party.currentIndex];
+  $("game-score").textContent = player.score;
+  $("game-party-status").textContent = `🎮 ${player.name} · Otázka ${party.currentQ + 1}/${party.questions.length}`;
+}
+
+// Posune hráče na další otázku, nebo ukončí jeho kolo, pokud odpověděl na všechny.
+function advancePartyQuestion(){
+  state.party.currentQ++;
+  if(state.party.currentQ >= state.party.questions.length){
+    finishPlayerRound();
+  } else {
+    loadPartyQuestion();
+  }
+}
+
+// Kolo aktuálního hráče skončilo (odpověděl na všechny otázky, nebo hráč
+// hru předčasně ukončil tlačítkem ✕) — jde na řadu další hráč.
+function finishPlayerRound(){
+  clearTimer();
+  state.party.currentIndex++;
+  showTurnScreen();
+}
+
+// Vykreslí tabulku výsledků seřazenou podle skóre (nejlepší nahoře).
+function renderLeaderboard(){
+  const players = state.party.players;
+  const roundLen = state.party.questions.length;
+  const sorted = players
+    .map((p, i) => ({ name: p.name, score: p.score, originalIndex: i }))
+    .sort((a, b) => (b.score - a.score) || (a.originalIndex - b.originalIndex));
+
+  const maxScore = sorted.length ? sorted[0].score : 0;
+  const winnerCount = sorted.filter(p => p.score === maxScore).length;
+
+  const list = $("leaderboard-list");
+  list.innerHTML = "";
+  sorted.forEach((p, rank) => {
+    const row = document.createElement("div");
+    row.className = "leaderboard-row" + (maxScore > 0 && p.score === maxScore ? " winner-row" : "");
+
+    const rankEl = document.createElement("span");
+    rankEl.className = "lb-rank";
+    rankEl.textContent = rank === 0 ? "🥇" : rank === 1 ? "🥈" : rank === 2 ? "🥉" : (rank + 1) + ".";
+
+    const nameEl = document.createElement("span");
+    nameEl.className = "lb-name";
+    nameEl.textContent = p.name;
+
+    const scoreEl = document.createElement("span");
+    scoreEl.className = "lb-score";
+    scoreEl.textContent = `${p.score}/${roundLen}`;
+
+    row.append(rankEl, nameEl, scoreEl);
+    list.appendChild(row);
+  });
+
+  const titleEl = $("leaderboard-title");
+  if(maxScore === 0){
+    titleEl.textContent = "Nikdo nebodoval";
+  } else if(winnerCount > 1){
+    titleEl.textContent = "Remíza! 🎉";
+  } else {
+    titleEl.textContent = `Vítěz: ${sorted[0].name} 🎉`;
+  }
+  if(maxScore > 0) launchConfetti();
+}
+
+/* ---------------------------------------------------------------------------
+   10) EDITOR SEZNAMU HRÁČŮ
+   Používá se jak pro úvodní zadání jmen ("setup"), tak pro úpravu pořadí
+   zbývajících hráčů za chodu hry ("queue") — např. když někdo hru opustí.
+   --------------------------------------------------------------------------- */
+function makePlayerId(){
+  return "p" + Date.now() + Math.random().toString(36).slice(2, 8);
+}
+
+function openPlayerListEditor(items, mode, onConfirm){
+  playerListEditor.items = items.map(p => ({ id: p.id || makePlayerId(), name: p.name }));
+  playerListEditor.mode = mode;
+  playerListEditor.onConfirm = onConfirm;
+
+  $("players-screen-title").textContent = mode === "setup" ? "👥 Noví hráči" : "🔀 Upravit hráče";
+  $("btn-players-confirm").textContent = mode === "setup" ? "Spustit hru" : "Uložit pořadí";
+  $("players-hint").classList.add("hidden");
+  $("player-name-input").value = "";
+
+  renderPlayerListEditor();
+  showScreen("screen-players");
+}
+
+function renderPlayerListEditor(){
+  const list = $("players-list");
+  list.innerHTML = "";
+
+  if(playerListEditor.items.length === 0){
+    const empty = document.createElement("p");
+    empty.className = "players-empty";
+    empty.textContent = "Zatím žádní hráči. Přidej první jméno výše.";
+    list.appendChild(empty);
+    return;
+  }
+
+  playerListEditor.items.forEach((p, i) => {
+    const row = document.createElement("div");
+    row.className = "player-row";
+
+    const order = document.createElement("div");
+    order.className = "player-order";
+    order.textContent = i + 1;
+
+    const name = document.createElement("div");
+    name.className = "player-name";
+    name.textContent = p.name;
+
+    const actions = document.createElement("div");
+    actions.className = "player-actions";
+
+    const upBtn = document.createElement("button");
+    upBtn.className = "player-mini-btn";
+    upBtn.textContent = "↑";
+    upBtn.disabled = i === 0;
+    upBtn.addEventListener("click", () => movePlayerInEditor(i, -1));
+
+    const downBtn = document.createElement("button");
+    downBtn.className = "player-mini-btn";
+    downBtn.textContent = "↓";
+    downBtn.disabled = i === playerListEditor.items.length - 1;
+    downBtn.addEventListener("click", () => movePlayerInEditor(i, 1));
+
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "player-mini-btn remove";
+    removeBtn.textContent = "✕";
+    removeBtn.addEventListener("click", () => removePlayerInEditor(i));
+
+    actions.append(upBtn, downBtn, removeBtn);
+    row.append(order, name, actions);
+    list.appendChild(row);
+  });
+}
+
+function movePlayerInEditor(index, dir){
+  const items = playerListEditor.items;
+  const target = index + dir;
+  if(target < 0 || target >= items.length) return;
+  [items[index], items[target]] = [items[target], items[index]];
+  renderPlayerListEditor();
+}
+
+function removePlayerInEditor(index){
+  playerListEditor.items.splice(index, 1);
+  renderPlayerListEditor();
+}
+
+function addPlayerFromInput(){
+  const input = $("player-name-input");
+  const name = input.value.trim();
+  if(!name) return;
+  if(playerListEditor.items.length >= 12){
+    $("players-hint").textContent = "Maximálně 12 hráčů.";
+    $("players-hint").classList.remove("hidden");
+    return;
+  }
+  playerListEditor.items.push({ id: makePlayerId(), name });
+  input.value = "";
+  $("players-hint").classList.add("hidden");
+  renderPlayerListEditor();
+  input.focus();
+}
+
+/* ---------------------------------------------------------------------------
+   11) VÝBĚR TÉMAT OTÁZEK
+   Zobrazí se před spuštěním nové hry (sólo i vícehráčové) a dá hráči vybrat,
+   z jakých okruhů se budou otázky losovat. Volba zůstává v paměti pro
+   případné "Hrát znovu", aby se nemusela zadávat pořád dokola.
+   --------------------------------------------------------------------------- */
+function openTopicsScreen(context){
+  topicsContext = context;
+  $("btn-topics-confirm").textContent = context === "solo" ? "▶ Hrát" : "Pokračovat";
+  renderTopicsList();
+  showScreen("screen-topics");
+}
+
+function renderTopicsList(){
+  const list = $("topics-list");
+  list.innerHTML = "";
+
+  CATEGORIES.forEach(cat => {
+    const count = QUESTIONS.filter(q => q.category === cat.id).length;
+
+    const row = document.createElement("div");
+    row.className = "topic-row";
+
+    const textWrap = document.createElement("div");
+    const label = document.createElement("div");
+    label.className = "topic-label";
+    label.textContent = cat.label;
+    const countEl = document.createElement("div");
+    countEl.className = "topic-count";
+    countEl.textContent = `${count} otázek`;
+    textWrap.append(label, countEl);
+
+    const sw = document.createElement("button");
+    sw.className = "switch" + (selectedCategories.has(cat.id) ? " on" : "");
+    sw.addEventListener("click", () => {
+      if(selectedCategories.has(cat.id)) selectedCategories.delete(cat.id);
+      else selectedCategories.add(cat.id);
+      renderTopicsList();
+    });
+
+    row.append(textWrap, sw);
+    list.appendChild(row);
+  });
+
+  $("topics-hint").classList.add("hidden");
+}
+
+/* ---------------------------------------------------------------------------
+   12) UI: NASTAVENÍ A NEJLEPŠÍ SKÓRE
+   --------------------------------------------------------------------------- */
+function renderSettingsUI(){
+  $("switch-sound").classList.toggle("on", settings.sound);
+  $("switch-vibration").classList.toggle("on", settings.vibration);
+}
+
+function refreshBestScoreUI(){
+  $("bestscore-value").textContent = getBestScore();
+}
+
+/* ---------------------------------------------------------------------------
+   13) NAVÁZÁNÍ UDÁLOSTÍ
+   --------------------------------------------------------------------------- */
+$("btn-play").addEventListener("click", () => openTopicsScreen("solo"));
+$("btn-replay").addEventListener("click", startGame);
+$("btn-menu").addEventListener("click", () => showScreen("screen-start"));
+
+$("btn-exit-game").addEventListener("click", () => {
+  clearTimer();
+  if(state.mode === "party" && state.party){
+    // V průběhu kola hráče: kolo se předčasně ukončí a jde se na dalšího hráče.
+    finishPlayerRound();
+  } else {
+    showScreen("screen-start");
+  }
+});
+
+/* ---- Výběr témat: navázání událostí ---- */
+$("btn-topics-back").addEventListener("click", () => showScreen("screen-start"));
+$("btn-topics-all").addEventListener("click", () => {
+  selectedCategories = new Set(CATEGORIES.map(c => c.id));
+  renderTopicsList();
+});
+$("btn-topics-none").addEventListener("click", () => {
+  selectedCategories = new Set();
+  renderTopicsList();
+});
+$("btn-topics-confirm").addEventListener("click", () => {
+  if(selectedCategories.size === 0){
+    $("topics-hint").classList.remove("hidden");
+    return;
+  }
+  if(topicsContext === "solo"){
+    startGame();
+  } else {
+    openPlayerListEditor(partyPlayers, "setup", (items) => {
+      partyPlayers = items.map(p => ({ id: p.id, name: p.name }));
+      startPartyGame();
+    });
+  }
+});
+
+/* ---- Vícehráčový režim: navázání událostí ---- */
+$("btn-party").addEventListener("click", () => openTopicsScreen("party"));
+
+$("btn-players-back").addEventListener("click", () => {
+  if(playerListEditor.mode === "setup"){
+    showScreen("screen-start");
+  } else {
+    showTurnScreen();
+  }
+});
+
+$("btn-add-player").addEventListener("click", addPlayerFromInput);
+$("player-name-input").addEventListener("keydown", (e) => {
+  if(e.key === "Enter") addPlayerFromInput();
+});
+
+$("btn-players-confirm").addEventListener("click", () => {
+  if(playerListEditor.mode === "setup" && playerListEditor.items.length < 2){
+    $("players-hint").textContent = "Přidej aspoň 2 hráče, aby šlo hru vyhodnotit.";
+    $("players-hint").classList.remove("hidden");
+    return;
+  }
+  const items = playerListEditor.items;
+  const callback = playerListEditor.onConfirm;
+  if(callback) callback(items);
+});
+
+$("btn-turn-start").addEventListener("click", beginPlayerRound);
+
+$("btn-turn-reorder").addEventListener("click", () => {
+  const remaining = state.party.players.slice(state.party.currentIndex);
+  const alreadyPlayed = state.party.players.slice(0, state.party.currentIndex);
+  openPlayerListEditor(remaining, "queue", (items) => {
+    state.party.players = alreadyPlayed.concat(items.map(p => ({ name: p.name, score: 0 })));
+    showTurnScreen();
+  });
+});
+
+$("btn-turn-quit").addEventListener("click", () => {
+  clearTimer();
+  showScreen("screen-start");
+});
+
+$("btn-party-replay").addEventListener("click", startPartyGame);
+
+$("btn-party-newroster").addEventListener("click", () => {
+  openPlayerListEditor([], "setup", (items) => {
+    partyPlayers = items.map(p => ({ id: p.id, name: p.name }));
+    startPartyGame();
+  });
+});
+
+$("btn-party-menu").addEventListener("click", () => showScreen("screen-start"));
+
+$("btn-bestscore").addEventListener("click", () => {
+  refreshBestScoreUI();
+  openModal("modal-bestscore");
+});
+$("close-bestscore").addEventListener("click", () => closeModal("modal-bestscore"));
+
+$("btn-settings").addEventListener("click", () => {
+  renderSettingsUI();
+  $("reset-confirm-row").classList.add("hidden");
+  $("btn-reset-score").classList.remove("hidden");
+  openModal("modal-settings");
+});
+$("close-settings").addEventListener("click", () => closeModal("modal-settings"));
+
+$("switch-sound").addEventListener("click", () => {
+  ensureAudio();
+  settings.sound = !settings.sound;
+  saveSettings();
+  renderSettingsUI();
+  if(settings.sound) Sound.correct();
+});
+$("switch-vibration").addEventListener("click", () => {
+  settings.vibration = !settings.vibration;
+  saveSettings();
+  renderSettingsUI();
+  if(settings.vibration) vibrate(30);
+});
+
+$("btn-reset-score").addEventListener("click", () => {
+  $("btn-reset-score").classList.add("hidden");
+  $("reset-confirm-row").classList.remove("hidden");
+});
+$("btn-reset-cancel").addEventListener("click", () => {
+  $("reset-confirm-row").classList.add("hidden");
+  $("btn-reset-score").classList.remove("hidden");
+});
+$("btn-reset-confirm").addEventListener("click", () => {
+  setBestScore(0);
+  $("reset-confirm-row").classList.add("hidden");
+  $("btn-reset-score").classList.remove("hidden");
+  refreshBestScoreUI();
+});
+
+// Zavření modalu kliknutím mimo obsah (na tmavý overlay)
+document.querySelectorAll(".modal-overlay").forEach(overlay => {
+  overlay.addEventListener("click", (e) => {
+    if(e.target === overlay) overlay.classList.remove("active");
+  });
+});
+
+/* ---------------------------------------------------------------------------
+   14) INICIALIZACE
+   --------------------------------------------------------------------------- */
+function init(){
+  renderSettingsUI();
+  refreshBestScoreUI();
+  showScreen("screen-start");
+}
+init();
+</script>
+</body>
+</html>
